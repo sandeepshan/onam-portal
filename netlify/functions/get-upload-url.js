@@ -37,7 +37,7 @@ function sanitizeForFilename(str) {
     .replace(/[^a-zA-Z0-9\-_]+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '')
-    .slice(0, 80);
+    .slice(0, 150);
 }
 
 function getAuth() {
@@ -117,10 +117,17 @@ exports.handler = async function (event) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Upload service is not configured yet. Please contact the organiser.' }) };
   }
 
-  // Build the destination filename: ProgramName_PersonName_timestamp.ext
+  // Build the destination filename: keep the original filename as the
+  // readable part (so submitters and the organiser can recognise it),
+  // with a timestamp inserted before the extension to avoid collisions
+  // if two people upload files with the same name (e.g. two phones that
+  // both produced "video.mp4"). The base name is still sanitised to
+  // avoid path separators or other characters that could confuse Drive
+  // or a filesystem if these are ever synced locally.
   const ext = fileName.includes('.') ? fileName.slice(fileName.lastIndexOf('.')) : '';
+  const baseName = fileName.includes('.') ? fileName.slice(0, fileName.lastIndexOf('.')) : fileName;
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const driveFileName = `${sanitizeForFilename(program)}_${sanitizeForFilename(name)}_${timestamp}${ext}`;
+  const driveFileName = `${sanitizeForFilename(baseName)}_${timestamp}${ext}`;
 
   try {
     const accessToken = (await auth.getAccessToken()).token;
