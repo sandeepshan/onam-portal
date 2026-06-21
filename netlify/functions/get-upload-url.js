@@ -1,11 +1,12 @@
 // netlify/functions/get-upload-url.js
 //
-// Mints a Google Drive "resumable upload session" URL using the service
-// account, and hands it back to the browser. The browser then uploads the
-// file bytes DIRECTLY to that URL (Google's servers), bypassing Netlify's
-// function execution time limit entirely. This function itself only ever
-// makes one quick API call for the session, plus a small companion text
-// file upload, so it finishes in well under a second.
+// Mints a Google Drive "resumable upload session" URL using OAuth
+// credentials authorized by the organiser's own Google account, and hands
+// it back to the browser. The browser then uploads the file bytes
+// DIRECTLY to that URL (Google's servers), bypassing Netlify's function
+// execution time limit entirely. This function itself only ever makes one
+// quick API call for the session, plus a small companion text file
+// upload, so it finishes in well under a second.
 //
 // Alongside the resumable session, this function also writes a small
 // ".txt" info file into the same Drive folder with the same base name as
@@ -13,11 +14,16 @@
 // description, so that information isn't lost even without a Sheets log.
 //
 // Required environment variables:
-//   GOOGLE_SERVICE_ACCOUNT_KEY  - full JSON key file contents, as one string
-//   DRIVE_FOLDER_ID             - destination Drive folder ID
+//   GOOGLE_OAUTH_CLIENT_ID       - OAuth client ID from Google Cloud
+//   GOOGLE_OAUTH_CLIENT_SECRET   - OAuth client secret from Google Cloud
+//   GOOGLE_OAUTH_REFRESH_TOKEN   - refresh token from the one-time authorize step
+//   DRIVE_FOLDER_ID              - destination Drive folder ID
 //
-// The service account must have Editor access to the Drive folder
-// (shared with its client_email, same as sharing with a person).
+// Because this uses OAuth (the organiser's own account) rather than a
+// service account, uploaded files are owned by the organiser's personal
+// Google account and count against their normal Drive storage — this
+// avoids the "Service Accounts do not have storage quota" error that
+// occurs on personal (non-Workspace) Gmail accounts.
 
 const { google } = require('googleapis');
 
@@ -35,20 +41,17 @@ function sanitizeForFilename(str) {
 }
 
 function getAuth() {
-  const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!rawKey) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY is not set');
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, and GOOGLE_OAUTH_REFRESH_TOKEN must all be set');
   }
-  let credentials;
-  try {
-    credentials = JSON.parse(rawKey);
-  } catch (err) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON');
-  }
-  return new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/drive'],
-  });
+
+  const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret);
+  oAuth2Client.setCredentials({ refresh_token: refreshToken });
+  return oAuth2Client;
 }
 
 exports.handler = async function (event) {
@@ -120,8 +123,7 @@ exports.handler = async function (event) {
   const driveFileName = `${sanitizeForFilename(program)}_${sanitizeForFilename(name)}_${timestamp}${ext}`;
 
   try {
-    const client = await auth.getClient();
-    const accessToken = (await client.getAccessToken()).token;
+    const accessToken = (await auth.getAccessToken()).token;
 
     // Initiate a resumable upload session directly via Drive's REST API.
     // (The googleapis client library doesn't expose a "give me the session
