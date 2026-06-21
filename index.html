@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onam 2026 — Share Your Performance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FBF3E3;
+    --cream-dim: #F2E8D4;
+    --ochre: #C9762C;
+    --ochre-deep: #A85E1F;
+    --leaf: #2F4F3A;
+    --leaf-deep: #20392A;
+    --coral: #D94A3D;
+    --ink: #1F1B16;
+    --ink-soft: #5B5246;
+    --gold: #E0A23B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Work Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 48px 20px 80px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; height: 6px;
+    background: repeating-linear-gradient(90deg,
+      var(--coral) 0 24px, var(--gold) 24px 48px,
+      var(--leaf) 48px 72px, var(--ochre) 72px 96px);
+    z-index: 10;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: clamp(34px, 6vw, 50px);
+    line-height: 1.08;
+    color: var(--ink);
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--coral);
+    font-weight: 500;
+  }
+
+  .sub {
+    color: var(--ink-soft);
+    font-size: 16px;
+    line-height: 1.55;
+    max-width: 440px;
+    margin: 0 auto 36px;
+  }
+
+  /* Pookalam */
+  .pookalam-stage {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .pookalam-caption {
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    margin-bottom: 38px;
+    letter-spacing: 0.02em;
+  }
+
+  .pookalam-caption strong {
+    color: var(--leaf);
+    font-weight: 600;
+  }
+
+  /* Card */
+  .card {
+    background: #fff;
+    border: 1px solid rgba(31,27,22,0.08);
+    border-radius: 4px;
+    padding: 40px 36px;
+    box-shadow: 0 1px 2px rgba(31,27,22,0.04);
+  }
+
+  .field {
+    margin-bottom: 26px;
+  }
+
+  .field:last-of-type { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--leaf-deep);
+    margin-bottom: 9px;
+  }
+
+  label .req { color: var(--coral); margin-left: 2px; }
+
+  label .hint {
+    font-weight: 400;
+    color: var(--ink-soft);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 12.5px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  textarea {
+    width: 100%;
+    padding: 13px 14px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 15.5px;
+    color: var(--ink);
+    background: var(--cream-dim);
+    border: 1.5px solid transparent;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+  }
+
+  input[type="text"]::placeholder,
+  input[type="email"]::placeholder,
+  textarea::placeholder {
+    color: rgba(31,27,22,0.32);
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  textarea:focus {
+    border-color: var(--ochre);
+    background: #fff;
+  }
+
+  input.valid {
+    border-color: var(--leaf);
+    background: #fff;
+  }
+
+  input.invalid {
+    border-color: var(--coral);
+  }
+
+  .error-msg {
+    font-size: 12.5px;
+    color: var(--coral);
+    margin-top: 6px;
+    min-height: 0;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* File drop zone */
+  .dropzone {
+    border: 1.5px dashed rgba(201,118,44,0.45);
+    border-radius: 3px;
+    background: var(--cream-dim);
+    padding: 28px 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    position: relative;
+  }
+
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--ochre);
+    background: #fdf6ea;
+  }
+
+  .dropzone.has-file {
+    border-style: solid;
+    border-color: var(--leaf);
+    background: #fff;
+    padding: 18px;
+  }
+
+  .dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .dz-icon {
+    font-size: 26px;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  .dz-text {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+
+  .dz-text strong {
+    color: var(--ochre-deep);
+  }
+
+  .dz-meta {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .file-row .ficon {
+    width: 38px; height: 38px;
+    border-radius: 3px;
+    background: var(--leaf);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .file-row .finfo { flex: 1; min-width: 0; }
+  .file-row .fname {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-row .fsize {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .file-remove {
+    background: none;
+    border: none;
+    color: var(--coral);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 8px;
+    flex-shrink: 0;
+  }
+
+  /* Progress bar for upload */
+  .upload-progress {
+    margin-top: 14px;
+    display: none;
+  }
+  .upload-progress.show { display: block; }
+  .bar-track {
+    height: 6px;
+    background: var(--cream-dim);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--ochre), var(--gold));
+    transition: width 0.2s ease;
+  }
+  .bar-label {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  /* Submit */
+  .submit-btn {
+    width: 100%;
+    margin-top: 34px;
+    padding: 16px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 15.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #fff;
+    background: var(--leaf);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .submit-btn:hover:not(:disabled) { background: var(--leaf-deep); }
+  .submit-btn:active:not(:disabled) { transform: scale(0.99); }
+
+  .submit-btn:disabled {
+    background: #cbc3b3;
+    cursor: not-allowed;
+  }
+
+  .submit-btn.loading {
+    background: var(--ochre-deep);
+  }
+
+  .form-foot {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  /* Success state */
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 30px 10px;
+  }
+  .success-screen.show { display: block; }
+  .success-screen .bloom-wrap { display: flex; justify-content: center; margin-bottom: 22px; }
+  .success-screen h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 28px;
+    color: var(--leaf-deep);
+    margin-bottom: 10px;
+  }
+  .success-screen p {
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 380px;
+    margin: 0 auto 24px;
+  }
+  .success-screen .again-btn {
+    background: none;
+    border: 1.5px solid var(--leaf);
+    color: var(--leaf-deep);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px 22px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .success-screen .again-btn:hover { background: var(--cream-dim); }
+
+  .form-screen.hide { display: none; }
+
+  .global-error {
+    background: #FCEAE7;
+    border: 1px solid rgba(217,74,61,0.3);
+    color: #8E2E24;
+    font-size: 13.5px;
+    padding: 12px 14px;
+    border-radius: 3px;
+    margin-bottom: 22px;
+    display: none;
+  }
+  .global-error.show { display: block; }
+
+  @media (max-width: 480px) {
+    .card { padding: 30px 22px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  /* keyboard focus visibility */
+  input:focus-visible, button:focus-visible, .dropzone:focus-within {
+    outline: 2px solid var(--ochre-deep);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Onam 2026 · Community Program</div>
+    <h1>Share your <em>performance</em><br>with everyone</h1>
+    <p class="sub">Upload your audio or video submission below. Each entry you complete adds a petal to the pookalam — finish all three to see it bloom.</p>
+  </header>
+
+  <div class="pookalam-stage">
+    <svg id="pookalam" width="180" height="180" viewBox="0 0 180 180" aria-hidden="true">
+      <circle cx="90" cy="90" r="86" fill="none" stroke="rgba(31,27,22,0.06)" stroke-width="1"/>
+      <!-- Ring 3 (outer) - 12 petals, lit by file -->
+      <g id="ring-file" opacity="0.18">
+        <g id="petals-outer"></g>
+      </g>
+      <!-- Ring 2 (middle) - 8 petals, lit by email -->
+      <g id="ring-email" opacity="0.18">
+        <g id="petals-mid"></g>
+      </g>
+      <!-- Ring 1 (inner) - 6 petals, lit by name -->
+      <g id="ring-name" opacity="0.18">
+        <g id="petals-inner"></g>
+      </g>
+      <circle id="center-dot" cx="90" cy="90" r="9" fill="var(--gold)" opacity="0.25"/>
+    </svg>
+  </div>
+  <p class="pookalam-caption" id="pookalam-caption"><strong>0 of 3</strong> fields complete</p>
+
+  <div class="card">
+
+    <div class="form-screen" id="formScreen">
+
+      <div class="global-error" id="globalError"></div>
+
+      <form id="onamForm" novalidate>
+
+        <div class="field">
+          <label for="name">Your name <span class="req">*</span></label>
+          <input type="text" id="name" name="name" placeholder="e.g. Anjali Menon" autocomplete="name" required>
+          <div class="error-msg" id="nameError">Enter your name to continue.</div>
+        </div>
+
+        <div class="field">
+          <label for="email">Email address <span class="req">*</span> <span class="hint">— so we can credit and contact you</span></label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+          <div class="error-msg" id="emailError">Enter a valid email address.</div>
+        </div>
+
+        <div class="field">
+          <label for="program">Program name <span class="req">*</span> <span class="hint">— what are you performing?</span></label>
+          <input type="text" id="program" name="program" placeholder="e.g. Thiruvathira, Onappattu, Margamkali" autocomplete="off" required>
+          <div class="error-msg" id="programError">Enter the name of your program.</div>
+        </div>
+
+        <div class="field">
+          <label for="description">Program description <span class="hint">— optional, a line or two about it</span></label>
+          <textarea id="description" name="description" placeholder="e.g. A traditional group dance performed in a circle, accompanied by Onappattu singing."></textarea>
+        </div>
+
+        <div class="field">
+          <label for="fileInput">Audio or video file <span class="req">*</span></label>
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" name="file" accept="audio/*,video/*" required>
+            <div id="dzContent">
+              <div class="dz-icon">🌺</div>
+              <div class="dz-text"><strong>Click to upload</strong> or drag a file here</div>
+              <div class="dz-meta">MP3, WAV, MP4, MOV — up to 2GB</div>
+            </div>
+          </div>
+          <div class="error-msg" id="fileError">Choose an audio or video file to upload.</div>
+
+          <div class="upload-progress" id="uploadProgress">
+            <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+            <div class="bar-label" id="barLabel">Uploading… 0%</div>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Submit my entry</button>
+        <div class="form-foot">Your file goes straight into the program's archive. Nothing is shared publicly without permission.</div>
+
+      </form>
+
+    </div>
+
+    <div class="success-screen" id="successScreen">
+      <div class="bloom-wrap">
+        <svg width="160" height="160" viewBox="0 0 180 180" aria-hidden="true">
+          <use href="#pookalam-bloomed"></use>
+        </svg>
+      </div>
+      <h2>Vishu vere, Onam ente!<br>Your entry is in.</h2>
+      <p id="successDetail">Thank you for sharing your program. We'll be in touch by email if we need anything else.</p>
+      <button class="again-btn" id="againBtn">Submit another entry</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Hidden template for bloomed pookalam shown on success -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="pookalam-bloomed-content"></g>
+  </defs>
+</svg>
+
+<script>
+(function() {
+  // ---------- Build the pookalam petal rings ----------
+  function petalPath(cx, cy, angleDeg, innerR, outerR, widthDeg) {
+    const a = angleDeg * Math.PI / 180;
+    const w = widthDeg * Math.PI / 180;
+    const x1 = cx + innerR * Math.cos(a - w/2);
+    const y1 = cy + innerR * Math.sin(a - w/2);
+    const x2 = cx + outerR * Math.cos(a);
+    const y2 = cy + outerR * Math.sin(a);
+    const x3 = cx + innerR * Math.cos(a + w/2);
+    const y3 = cy + innerR * Math.sin(a + w/2);
+    return `M ${x1.toFixed(2)} ${y1.toFixed(2)} Q ${x2.toFixed(2)} ${y2.toFixed(2)} ${x3.toFixed(2)} ${y3.toFixed(2)} Z`;
+  }
+
+  function buildRing(groupId, count, innerR, outerR, color) {
+    const g = document.getElementById(groupId);
+    const widthDeg = (360 / count) * 0.78;
+    for (let i = 0; i < count; i++) {
+      const angle = (360 / count) * i - 90;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', petalPath(90, 90, angle, innerR, outerR, widthDeg));
+      path.setAttribute('fill', color);
+      g.appendChild(path);
+    }
+  }
+
+  buildRing('petals-inner', 6, 14, 34, '#D94A3D');
+  buildRing('petals-mid', 8, 38, 60, '#E0A23B');
+  buildRing('petals-outer', 12, 64, 84, '#2F4F3A');
+
+  const ringName = document.getElementById('ring-name');
+  const ringEmail = document.getElementById('ring-email');
+  const ringFile = document.getElementById('ring-file');
+  const centerDot = document.getElementById('center-dot');
+  const caption = document.getElementById('pookalam-caption');
+
+  function updateBloom() {
+    const nameOk = nameInput.value.trim().length > 0;
+    const emailOk = isValidEmail(emailInput.value.trim());
+    const fileOk = !!selectedFile;
+
+    ringName.setAttribute('opacity', nameOk ? '1' : '0.18');
+    ringEmail.setAttribute('opacity', emailOk ? '1' : '0.18');
+    ringFile.setAttribute('opacity', fileOk ? '1' : '0.18');
+
+    const count = [nameOk, emailOk, fileOk].filter(Boolean).length;
+    centerDot.setAttribute('opacity', count === 3 ? '1' : '0.25');
+    caption.innerHTML = `<strong>${count} of 3</strong> fields complete`;
+  }
+
+  // ---------- Validation helpers ----------
+  function isValidEmail(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+
+  const nameInput = document.getElementById('name');
+  const emailInput = document.getElementById('email');
+  const programInput = document.getElementById('program');
+  const descriptionInput = document.getElementById('description');
+  const fileInput = document.getElementById('fileInput');
+  const dropzone = document.getElementById('dropzone');
+  const dzContent = document.getElementById('dzContent');
+
+  let selectedFile = null;
+
+  function setFieldState(input, errorEl, valid, show) {
+    input.classList.toggle('valid', valid && show !== false);
+    input.classList.toggle('invalid', !valid && show);
+    errorEl.classList.toggle('show', !valid && show);
+  }
+
+  nameInput.addEventListener('input', () => {
+    setFieldState(nameInput, document.getElementById('nameError'), nameInput.value.trim().length > 0, nameInput.value.length > 0);
+    updateBloom();
+  });
+
+  emailInput.addEventListener('input', () => {
+    const ok = isValidEmail(emailInput.value.trim());
+    setFieldState(emailInput, document.getElementById('emailError'), ok, emailInput.value.length > 0);
+    updateBloom();
+  });
+
+  programInput.addEventListener('input', () => {
+    setFieldState(programInput, document.getElementById('programError'), programInput.value.trim().length > 0, programInput.value.length > 0);
+  });
+
+  function formatSize(bytes) {
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+    return (bytes/(1024*1024)).toFixed(1) + ' MB';
+  }
+
+  function renderFile(file) {
+    selectedFile = file;
+    const isVideo = file.type.startsWith('video');
+    dzContent.innerHTML = `
+      <div class="file-row">
+        <div class="ficon">${isVideo ? '🎬' : '🎵'}</div>
+        <div class="finfo">
+          <div class="fname">${file.name}</div>
+          <div class="fsize">${formatSize(file.size)}</div>
+        </div>
+        <button type="button" class="file-remove" id="removeFile">Remove</button>
+      </div>
+    `;
+    dropzone.classList.add('has-file');
+    document.getElementById('fileError').classList.remove('show');
+    document.getElementById('removeFile').addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearFile();
+    });
+    updateBloom();
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    dropzone.classList.remove('has-file');
+    dzContent.innerHTML = `
+      <div class="dz-icon">🌺</div>
+      <div class="dz-text"><strong>Click to upload</strong> or drag a file here</div>
+      <div class="dz-meta">MP3, WAV, MP4, MOV — up to 2GB</div>
+    `;
+    updateBloom();
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) renderFile(e.target.files[0]);
+  });
+
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.add('drag');
+    });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('drag');
+    });
+  });
+  dropzone.addEventListener('drop', (e) => {
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      fileInput.files = e.dataTransfer.files;
+      renderFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  // ---------- Submit handling ----------
+  const form = document.getElementById('onamForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const globalError = document.getElementById('globalError');
+  const uploadProgress = document.getElementById('uploadProgress');
+  const barFill = document.getElementById('barFill');
+  const barLabel = document.getElementById('barLabel');
+  const formScreen = document.getElementById('formScreen');
+  const successScreen = document.getElementById('successScreen');
+  const successDetail = document.getElementById('successDetail');
+  const againBtn = document.getElementById('againBtn');
+
+  const MAX_BYTES = 2 * 1024 * 1024 * 1024;
+
+  function showGlobalError(msg) {
+    globalError.textContent = msg;
+    globalError.classList.add('show');
+  }
+  function hideGlobalError() {
+    globalError.classList.remove('show');
+  }
+
+  function validateAll() {
+    let ok = true;
+
+    if (nameInput.value.trim().length === 0) {
+      setFieldState(nameInput, document.getElementById('nameError'), false, true);
+      ok = false;
+    }
+    if (!isValidEmail(emailInput.value.trim())) {
+      setFieldState(emailInput, document.getElementById('emailError'), false, true);
+      ok = false;
+    }
+    if (programInput.value.trim().length === 0) {
+      setFieldState(programInput, document.getElementById('programError'), false, true);
+      ok = false;
+    }
+    if (!selectedFile) {
+      document.getElementById('fileError').classList.add('show');
+      ok = false;
+    } else if (selectedFile.size > MAX_BYTES) {
+      showGlobalError('That file is larger than 2GB. Please compress it or use a shorter clip.');
+      ok = false;
+    } else if (!selectedFile.type.startsWith('audio') && !selectedFile.type.startsWith('video')) {
+      showGlobalError('Please upload an audio or video file.');
+      ok = false;
+    }
+
+    return ok;
+  }
+
+  // Step 1: ask our function for a Drive resumable-upload session URL.
+  function getUploadSession(name, email, program, description, file) {
+    return fetch('/.netlify/functions/get-upload-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name, email, program, description,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+      }),
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Could not start the upload.');
+      }
+      return data; // { uploadUrl, driveFileName }
+    });
+  }
+
+  // Step 2: PUT the file bytes directly to Google's resumable session URL.
+  // Using XHR (not fetch) so we get real upload progress events.
+  function uploadFileDirectly(uploadUrl, file) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', function (evt) {
+        if (evt.lengthComputable) {
+          const pct = Math.round((evt.loaded / evt.total) * 100);
+          barFill.style.width = pct + '%';
+          barLabel.textContent = `Uploading… ${pct}%`;
+        }
+      });
+
+      xhr.addEventListener('load', function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          let fileInfo = {};
+          try { fileInfo = JSON.parse(xhr.responseText); } catch (err) {}
+          resolve(fileInfo); // contains Drive file id, etc.
+        } else {
+          reject(new Error('The upload to Drive did not complete. Please try again.'));
+        }
+      });
+
+      xhr.addEventListener('error', function () {
+        reject(new Error('We lost connection during the upload. Please try again.'));
+      });
+
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideGlobalError();
+
+    if (!validateAll()) return;
+
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const program = programInput.value.trim();
+    const description = descriptionInput.value.trim();
+
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    submitBtn.textContent = 'Starting upload…';
+    uploadProgress.classList.add('show');
+    barFill.style.width = '0%';
+    barLabel.textContent = 'Preparing…';
+
+    try {
+      const session = await getUploadSession(name, email, program, description, selectedFile);
+
+      submitBtn.textContent = 'Uploading…';
+      const fileInfo = await uploadFileDirectly(session.uploadUrl, selectedFile);
+
+      submitBtn.classList.remove('loading');
+      successDetail.textContent = `Thank you, ${name} — "${program}" has been received.`;
+      formScreen.classList.add('hide');
+      successScreen.classList.add('show');
+    } catch (err) {
+      console.error(err);
+      submitBtn.classList.remove('loading');
+      showGlobalError(err.message || 'Something went wrong while uploading. Please try again.');
+      resetSubmitButton();
+    }
+  });
+
+  function resetSubmitButton() {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('loading');
+    submitBtn.textContent = 'Submit my entry';
+    uploadProgress.classList.remove('show');
+    barFill.style.width = '0%';
+  }
+
+  againBtn.addEventListener('click', function() {
+    form.reset();
+    clearFile();
+    nameInput.classList.remove('valid', 'invalid');
+    emailInput.classList.remove('valid', 'invalid');
+    programInput.classList.remove('valid', 'invalid');
+    resetSubmitButton();
+    successScreen.classList.remove('show');
+    formScreen.classList.remove('hide');
+    updateBloom();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  });
+
+  updateBloom();
+})();
+</script>
+
+</body>
+</html>

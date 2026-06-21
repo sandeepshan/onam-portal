@@ -1,0 +1,9 @@
+{
+  "name": "onam-2026-upload-portal",
+  "version": "1.0.0",
+  "description": "Onam 2026 community program upload portal - frontend + Netlify function to store submissions in Google Drive and log to Google Sheets",
+  "private": true,
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}
