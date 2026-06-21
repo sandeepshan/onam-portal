@@ -317,6 +317,12 @@
     color: var(--ink-soft);
     margin-top: 6px;
   }
+  .bar-hint {
+    font-size: 12px;
+    color: var(--ochre-deep);
+    margin-top: 8px;
+    line-height: 1.45;
+  }
 
   /* Submit */
   .submit-btn {
@@ -493,6 +499,7 @@
           <div class="upload-progress" id="uploadProgress">
             <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
             <div class="bar-label" id="barLabel">Uploading… 0%</div>
+            <div class="bar-hint" id="barHint">Large files take a few minutes. Please keep this tab open and active until it finishes.</div>
           </div>
         </div>
 
@@ -744,38 +751,179 @@
     });
   }
 
-  // Step 2: PUT the file bytes directly to Google's resumable session URL.
-  // Using XHR (not fetch) so we get real upload progress events.
+  // Step 2: upload the file to Google's resumable session URL in fixed-size
+  // CHUNKS rather than one giant request. This matters for large files:
+  // sending 700MB in a single PUT means any tiny blip near the end kills
+  // the entire multi-minute request, even though Google may have already
+  // received the bytes — leaving the user staring at an error message for
+  // a file that's actually sitting safely in Drive. Chunking means each
+  // request is small and fast, a dropped chunk only costs a few seconds
+  // to resend, and we always know exactly how much Google has confirmed.
+  const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB per chunk, Google's recommended granularity
+  const MAX_CHUNK_RETRIES = 5;
+
   function uploadFileDirectly(uploadUrl, file) {
+    return uploadFromOffset(uploadUrl, file, 0);
+  }
+
+  // Uploads everything from `startByte` onward, one chunk at a time.
+  async function uploadFromOffset(uploadUrl, file, startByte) {
+    let offset = startByte;
+
+    while (offset < file.size) {
+      const end = Math.min(offset + CHUNK_SIZE, file.size);
+      const chunk = file.slice(offset, end);
+
+      const result = await sendChunkWithRetry(uploadUrl, file, chunk, offset, end);
+
+      if (result.done) {
+        return result.fileInfo;
+      }
+      // Not done yet — advance to whatever offset Drive confirmed
+      // (normally just `end`, but if a retry resync found a different
+      // confirmed offset, trust that instead).
+      offset = result.nextOffset;
+
+      const pct = Math.min(100, Math.round((offset / file.size) * 100));
+      barFill.style.width = pct + '%';
+      barLabel.textContent = `Uploading… ${pct}%`;
+    }
+
+    // Should not normally be reached (the loop returns on `done`), but as
+    // a safeguard, do a final status check in case the last chunk's
+    // response was lost even though Drive completed the file.
+    const finalCheck = await checkResumeOffset(uploadUrl, file);
+    if (finalCheck.done) return finalCheck.fileInfo;
+    throw new Error('The upload did not complete. Please try again.');
+  }
+
+  // Sends one chunk, retrying with a fresh offset check on failure, up to
+  // MAX_CHUNK_RETRIES times. Resolves with either { done: true, fileInfo }
+  // once the whole file is confirmed complete, or { done: false, nextOffset }
+  // once this chunk (or a corrected range) has been confirmed received.
+  function sendChunkWithRetry(uploadUrl, file, chunk, startByte, endByteExclusive, retryCount = 0) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
 
-      xhr.upload.addEventListener('progress', function (evt) {
-        if (evt.lengthComputable) {
-          const pct = Math.round((evt.loaded / evt.total) * 100);
-          barFill.style.width = pct + '%';
-          barLabel.textContent = `Uploading… ${pct}%`;
-        }
-      });
-
       xhr.addEventListener('load', function () {
-        if (xhr.status >= 200 && xhr.status < 300) {
+        // 200/201 = the file is fully complete (this was the last chunk).
+        if (xhr.status === 200 || xhr.status === 201) {
           let fileInfo = {};
           try { fileInfo = JSON.parse(xhr.responseText); } catch (err) {}
-          resolve(fileInfo); // contains Drive file id, etc.
-        } else {
-          reject(new Error('The upload to Drive did not complete. Please try again.'));
+          resolve({ done: true, fileInfo });
+          return;
         }
+        // 308 = this chunk was accepted, more bytes expected.
+        if (xhr.status === 308) {
+          resolve({ done: false, nextOffset: endByteExclusive });
+          return;
+        }
+        // Anything else is unexpected — treat like a failure and retry.
+        retryOrFail(`Unexpected status ${xhr.status} while uploading.`);
       });
 
       xhr.addEventListener('error', function () {
-        reject(new Error('We lost connection during the upload. Please try again.'));
+        retryOrFail('Network error during upload.');
       });
+
+      xhr.addEventListener('timeout', function () {
+        retryOrFail('Upload request timed out.');
+      });
+
+      function retryOrFail(reason) {
+        if (retryCount >= MAX_CHUNK_RETRIES) {
+          reject(new Error('We lost connection during the upload and could not recover. Please check your connection and try again.'));
+          return;
+        }
+        barLabel.textContent = 'Connection blipped — recovering…';
+        // Re-sync with Google on exactly what it has, then resume from
+        // the real confirmed offset rather than assuming this chunk failed
+        // outright (it may have partially landed).
+        checkResumeOffset(uploadUrl, file)
+          .then((status) => {
+            if (status.done) {
+              resolve({ done: true, fileInfo: status.fileInfo });
+              return;
+            }
+            setTimeout(() => {
+              const resumeChunk = file.slice(status.nextOffset, Math.min(status.nextOffset + CHUNK_SIZE, file.size));
+              sendChunkWithRetry(uploadUrl, file, resumeChunk, status.nextOffset, Math.min(status.nextOffset + CHUNK_SIZE, file.size), retryCount + 1)
+                .then(resolve)
+                .catch(reject);
+            }, 1200);
+          })
+          .catch(() => reject(new Error('We lost connection during the upload. Please try again.')));
+      }
 
       xhr.open('PUT', uploadUrl);
       xhr.setRequestHeader('Content-Type', file.type);
-      xhr.send(file);
+      xhr.setRequestHeader('Content-Range', `bytes ${startByte}-${endByteExclusive - 1}/${file.size}`);
+      xhr.send(chunk);
     });
+  }
+
+  // Asks Google how many bytes of the file it has actually received so
+  // far, per the resumable upload protocol: a PUT with an empty body and
+  // a Content-Range of "bytes */totalSize" returns a 308 with a Range
+  // header indicating what's been received, or a 200/201 if the upload
+  // had actually already completed (possible if only the final
+  // confirmation response was lost, not the bytes themselves).
+  function checkResumeOffset(uploadUrl, file) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.addEventListener('load', function () {
+        if (xhr.status === 200 || xhr.status === 201) {
+          let fileInfo = {};
+          try { fileInfo = JSON.parse(xhr.responseText); } catch (err) {}
+          resolve({ done: true, fileInfo });
+          return;
+        }
+        if (xhr.status === 308) {
+          const range = xhr.getResponseHeader('Range'); // e.g. "bytes=0-1048575"
+          if (range) {
+            const match = range.match(/bytes=0-(\d+)/);
+            if (match) {
+              resolve({ done: false, nextOffset: Number(match[1]) + 1 });
+              return;
+            }
+          }
+          resolve({ done: false, nextOffset: 0 });
+          return;
+        }
+        reject(new Error(`Unexpected status while checking upload progress: ${xhr.status}`));
+      });
+
+      xhr.addEventListener('error', function () {
+        reject(new Error('Could not check upload progress.'));
+      });
+
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Range', `bytes */${file.size}`);
+      xhr.send();
+    });
+  }
+
+  // Step 3: ask the server to confirm, directly against Google Drive,
+  // that the file actually exists with the right size — a final check
+  // before showing success, so we're never relying solely on the upload
+  // request's own response (which could itself be a false positive or
+  // negative if the connection blipped right at the very end).
+  function verifyUpload(fileId, expectedSize) {
+    return fetch('/.netlify/functions/verify-upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId, expectedSize }),
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({ verified: false }));
+      return data;
+    }).catch(() => ({ verified: false, reason: 'network' }));
+  }
+
+  function beforeUnloadHandler(e) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
   }
 
   form.addEventListener('submit', async function (e) {
@@ -796,17 +944,42 @@
     barFill.style.width = '0%';
     barLabel.textContent = 'Preparing…';
 
+    // Warn the user if they try to close/navigate away mid-upload — this
+    // is the single biggest cause of interrupted large-file uploads, so
+    // preventing it proactively matters more than retry logic alone.
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+
     try {
       const session = await getUploadSession(name, email, program, description, selectedFile);
 
       submitBtn.textContent = 'Uploading…';
       const fileInfo = await uploadFileDirectly(session.uploadUrl, selectedFile);
 
+      submitBtn.textContent = 'Confirming…';
+      barLabel.textContent = 'Confirming with Drive…';
+      const fileId = fileInfo && fileInfo.id ? fileInfo.id : null;
+      const verification = fileId
+        ? await verifyUpload(fileId, selectedFile.size)
+        : { verified: false, reason: 'no_file_id' };
+
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
       submitBtn.classList.remove('loading');
-      successDetail.textContent = `Thank you, ${name} — "${program}" has been received.`;
-      formScreen.classList.add('hide');
-      successScreen.classList.add('show');
+
+      if (verification.verified) {
+        successDetail.textContent = `Thank you, ${name} — "${program}" has been received and confirmed in Drive.`;
+        formScreen.classList.add('hide');
+        successScreen.classList.add('show');
+      } else {
+        // The upload step itself reported success, but we couldn't
+        // independently confirm it against Drive. Rather than show a
+        // possibly-false success screen, be honest about the uncertainty
+        // and let the person retry or check back, instead of declaring
+        // outright failure when the file may well be fine.
+        showGlobalError('Your file finished uploading, but we could not yet confirm it in Drive. This sometimes just means Drive needs a moment — please wait 30 seconds and try submitting again, or contact the organiser if this keeps happening.');
+        resetSubmitButton();
+      }
     } catch (err) {
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
       console.error(err);
       submitBtn.classList.remove('loading');
       showGlobalError(err.message || 'Something went wrong while uploading. Please try again.');
