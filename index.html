@@ -759,7 +759,23 @@
   // a file that's actually sitting safely in Drive. Chunking means each
   // request is small and fast, a dropped chunk only costs a few seconds
   // to resend, and we always know exactly how much Google has confirmed.
-  const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB per chunk, Google's recommended granularity
+  //
+  // Each chunk is sent to OUR OWN /.netlify/functions/upload-chunk
+  // endpoint (same-origin, no CORS issue) rather than directly to
+  // googleapis.com. Google's resumable upload endpoint does not reliably
+  // return CORS headers for cross-origin requests with a Content-Range
+  // header, which causes the browser to block reading the response even
+  // when the underlying upload succeeded. Routing through our own
+  // function sidesteps this entirely — the function forwards the chunk
+  // to Google server-side, where CORS doesn't apply.
+  //
+  // CHUNK_SIZE is deliberately small (3MB, not the 8MB Google recommends
+  // for direct uploads): Netlify functions base64-encode binary request
+  // bodies internally, which adds ~30% overhead and effectively caps
+  // binary payloads at around 4.5MB. 3MB leaves a safe margin under that
+  // ceiling while still being a clean multiple of 256KB as Google's
+  // resumable protocol requires for non-final chunks.
+  const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB per chunk
   const MAX_CHUNK_RETRIES = 5;
 
   function uploadFileDirectly(uploadUrl, file) {
@@ -797,110 +813,100 @@
     throw new Error('The upload did not complete. Please try again.');
   }
 
-  // Sends one chunk, retrying with a fresh offset check on failure, up to
-  // MAX_CHUNK_RETRIES times. Resolves with either { done: true, fileInfo }
-  // once the whole file is confirmed complete, or { done: false, nextOffset }
-  // once this chunk (or a corrected range) has been confirmed received.
+  // Forwards one chunk through our own upload-chunk function. Retries
+  // with a fresh offset check on failure, up to MAX_CHUNK_RETRIES times.
+  // Resolves with either { done: true, fileInfo } once the whole file is
+  // confirmed complete, or { done: false, nextOffset } once this chunk
+  // (or a corrected range) has been confirmed received.
   function sendChunkWithRetry(uploadUrl, file, chunk, startByte, endByteExclusive, retryCount = 0) {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-
-      xhr.addEventListener('load', function () {
-        // 200/201 = the file is fully complete (this was the last chunk).
-        if (xhr.status === 200 || xhr.status === 201) {
-          let fileInfo = {};
-          try { fileInfo = JSON.parse(xhr.responseText); } catch (err) {}
-          resolve({ done: true, fileInfo });
-          return;
+    return fetch('/.netlify/functions/upload-chunk', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-Upload-Url': uploadUrl,
+        'X-Content-Range': `bytes ${startByte}-${endByteExclusive - 1}/${file.size}`,
+      },
+      body: chunk,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Chunk relay failed with status ${res.status}`);
         }
-        // 308 = this chunk was accepted, more bytes expected.
-        if (xhr.status === 308) {
-          resolve({ done: false, nextOffset: endByteExclusive });
-          return;
+        const data = await res.json();
+        if (data.error) {
+          throw new Error('Drive rejected this chunk.');
         }
-        // Anything else is unexpected — treat like a failure and retry.
-        retryOrFail(`Unexpected status ${xhr.status} while uploading.`);
+        if (data.done) {
+          return { done: true, fileInfo: data.fileInfo };
+        }
+        // Not done — figure out the confirmed offset from Drive's Range
+        // header if present, otherwise trust that this whole chunk landed.
+        let nextOffset = endByteExclusive;
+        if (data.range) {
+          const match = data.range.match(/bytes=0-(\d+)/);
+          if (match) nextOffset = Number(match[1]) + 1;
+        }
+        return { done: false, nextOffset };
+      })
+      .catch((err) => {
+        return retryOrFail(err.message);
       });
 
-      xhr.addEventListener('error', function () {
-        retryOrFail('Network error during upload.');
-      });
-
-      xhr.addEventListener('timeout', function () {
-        retryOrFail('Upload request timed out.');
-      });
-
-      function retryOrFail(reason) {
-        if (retryCount >= MAX_CHUNK_RETRIES) {
-          reject(new Error('We lost connection during the upload and could not recover. Please check your connection and try again.'));
-          return;
-        }
-        barLabel.textContent = 'Connection blipped — recovering…';
-        // Re-sync with Google on exactly what it has, then resume from
-        // the real confirmed offset rather than assuming this chunk failed
-        // outright (it may have partially landed).
-        checkResumeOffset(uploadUrl, file)
-          .then((status) => {
-            if (status.done) {
-              resolve({ done: true, fileInfo: status.fileInfo });
-              return;
-            }
+    function retryOrFail(reason) {
+      if (retryCount >= MAX_CHUNK_RETRIES) {
+        return Promise.reject(new Error('We lost connection during the upload and could not recover. Please check your connection and try again.'));
+      }
+      barLabel.textContent = 'Connection blipped — recovering…';
+      // Re-sync with Google on exactly what it has, then resume from the
+      // real confirmed offset rather than assuming this chunk failed
+      // outright (it may have partially landed).
+      return checkResumeOffset(uploadUrl, file)
+        .then((status) => {
+          if (status.done) {
+            return { done: true, fileInfo: status.fileInfo };
+          }
+          return new Promise((resolve, reject) => {
             setTimeout(() => {
-              const resumeChunk = file.slice(status.nextOffset, Math.min(status.nextOffset + CHUNK_SIZE, file.size));
-              sendChunkWithRetry(uploadUrl, file, resumeChunk, status.nextOffset, Math.min(status.nextOffset + CHUNK_SIZE, file.size), retryCount + 1)
+              const resumeEnd = Math.min(status.nextOffset + CHUNK_SIZE, file.size);
+              const resumeChunk = file.slice(status.nextOffset, resumeEnd);
+              sendChunkWithRetry(uploadUrl, file, resumeChunk, status.nextOffset, resumeEnd, retryCount + 1)
                 .then(resolve)
                 .catch(reject);
             }, 1200);
-          })
-          .catch(() => reject(new Error('We lost connection during the upload. Please try again.')));
-      }
-
-      xhr.open('PUT', uploadUrl);
-      xhr.setRequestHeader('Content-Type', file.type);
-      xhr.setRequestHeader('Content-Range', `bytes ${startByte}-${endByteExclusive - 1}/${file.size}`);
-      xhr.send(chunk);
-    });
+          });
+        })
+        .catch(() => Promise.reject(new Error('We lost connection during the upload. Please try again.')));
+    }
   }
 
-  // Asks Google how many bytes of the file it has actually received so
-  // far, per the resumable upload protocol: a PUT with an empty body and
-  // a Content-Range of "bytes */totalSize" returns a 308 with a Range
-  // header indicating what's been received, or a 200/201 if the upload
-  // had actually already completed (possible if only the final
-  // confirmation response was lost, not the bytes themselves).
+  // Asks Google (via our own upload-chunk function, which also handles
+  // this empty status-check request) how many bytes of the file it has
+  // actually received so far. Returns either { done: true, fileInfo } if
+  // Drive says the file is already fully uploaded, or
+  // { done: false, nextOffset } indicating where to resume from.
   function checkResumeOffset(uploadUrl, file) {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-
-      xhr.addEventListener('load', function () {
-        if (xhr.status === 200 || xhr.status === 201) {
-          let fileInfo = {};
-          try { fileInfo = JSON.parse(xhr.responseText); } catch (err) {}
-          resolve({ done: true, fileInfo });
-          return;
-        }
-        if (xhr.status === 308) {
-          const range = xhr.getResponseHeader('Range'); // e.g. "bytes=0-1048575"
-          if (range) {
-            const match = range.match(/bytes=0-(\d+)/);
-            if (match) {
-              resolve({ done: false, nextOffset: Number(match[1]) + 1 });
-              return;
-            }
-          }
-          resolve({ done: false, nextOffset: 0 });
-          return;
-        }
-        reject(new Error(`Unexpected status while checking upload progress: ${xhr.status}`));
-      });
-
-      xhr.addEventListener('error', function () {
-        reject(new Error('Could not check upload progress.'));
-      });
-
-      xhr.open('PUT', uploadUrl);
-      xhr.setRequestHeader('Content-Range', `bytes */${file.size}`);
-      xhr.send();
+    return fetch('/.netlify/functions/upload-chunk', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-Upload-Url': uploadUrl,
+        'X-Content-Range': `bytes */${file.size}`,
+      },
+      body: new Blob([]),
+    }).then(async (res) => {
+      if (!res.ok) {
+        throw new Error(`Status check failed with status ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.done) {
+        return { done: true, fileInfo: data.fileInfo };
+      }
+      let nextOffset = 0;
+      if (data.range) {
+        const match = data.range.match(/bytes=0-(\d+)/);
+        if (match) nextOffset = Number(match[1]) + 1;
+      }
+      return { done: false, nextOffset };
     });
   }
 
