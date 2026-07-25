@@ -413,6 +413,7 @@ h1 em{font-style:italic;color:var(--coral);font-weight:500;}
       <div class="stage-eyebrow">Kalasandhya 2026</div>
       <div class="stage-title">Emcee Run Sheet</div>
       <div class="stage-meta" id="stageMeta">Upload the program PDF to generate the run sheet.</div>
+      <div id="stageSavedBadge" style="display:none;margin-top:6px;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(224,162,59,0.6);">✓ Shared with all emcees</div>
     </div>
     <div class="stage-actions">
       <button class="upload-pdf-btn" id="uploadPdfBtn">
@@ -509,6 +510,10 @@ $('tabStage').addEventListener('click',()=>{
   submissionsPanel.style.display='none'; stagePanel.style.display='block';
   $('tabStage').classList.add('active'); $('tabSubmissions').classList.remove('active');
   document.body.style.background='var(--stage-bg)';
+  // Restore saved run sheet if not already showing
+  if($('runSheet').style.display==='none'&&$('stageParsing').style.display==='none'){
+    loadSavedRunSheet();
+  }
 });
 
 // ════════════════════════════
@@ -552,6 +557,41 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 
 let runSheetItems=[]; // array of {type:'program'|'slot', data:{...}}
 let pendingInsertIndex=null;
+let _isSaving=false;
+
+async function saveRunSheet(filename){
+  if(_isSaving)return;
+  _isSaving=true;
+  try{
+    await fetch('/.netlify/functions/save-runsheet',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({items:runSheetItems,filename}),
+    });
+  }catch(e){console.warn('Run sheet save failed:',e);}
+  finally{_isSaving=false;}
+}
+
+async function loadSavedRunSheet(){
+  $('stageParsing').style.display='block';
+  dz.style.display='none';
+  try{
+    const res=await fetch('/.netlify/functions/load-runsheet');
+    const data=await res.json().catch(()=>({}));
+    $('stageParsing').style.display='none';
+    if(!data.ok||!data.items||!data.items.length){dz.style.display='';return false;}
+    runSheetItems=data.items;
+    renderRunSheet(data.filename||'program.pdf');
+    dz.style.display='none';
+    $('runSheet').style.display='block';
+    $('clearRunSheet').style.display='';
+    return true;
+  }catch(e){
+    $('stageParsing').style.display='none';
+    dz.style.display='';
+    return false;
+  }
+}
 
 // PDF upload triggers
 $('uploadPdfBtn').addEventListener('click',()=>$('pdfFileInput').click());
@@ -564,7 +604,16 @@ dz.addEventListener('click',()=>$('pdfFileInput').click());
 ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
 dz.addEventListener('drop',e=>{if(e.dataTransfer.files&&e.dataTransfer.files[0])parsePDF(e.dataTransfer.files[0]);});
 
-$('clearRunSheet').addEventListener('click',()=>{runSheetItems=[];$('runSheet').style.display='none';$('stageParsing').style.display='none';dz.style.display='';$('clearRunSheet').style.display='none';$('stageMeta').textContent='Upload the program PDF to generate the run sheet.';});
+$('clearRunSheet').addEventListener('click',()=>{
+  runSheetItems=[];
+  saveRunSheet('');
+  $('runSheet').style.display='none';
+  $('stageParsing').style.display='none';
+  dz.style.display='';
+  $('clearRunSheet').style.display='none';
+  $('stageMeta').textContent='Upload the program PDF to generate the run sheet.';
+  $('stageSavedBadge').style.display='none';
+});
 
 async function parsePDF(file){
   dz.style.display='none';
@@ -582,6 +631,7 @@ async function parsePDF(file){
     }
     const programs=parseRunSheet(fullText);
     runSheetItems=programs.map(p=>({type:'program',data:p}));
+    saveRunSheet(file.name);
     renderRunSheet(file.name);
     $('stageParsing').style.display='none';
     $('runSheet').style.display='block';
@@ -689,6 +739,7 @@ function renderRunSheet(filename){
   const totalParticipants=[...new Set(programs.flatMap(p=>[p.lead,...p.participants]).filter(Boolean))].length;
 
   $('stageMeta').textContent=`${filename} · ${total} programs · ${firstTime}${lastTime?' – '+lastTime:''}`;
+  if(filename)$('stageSavedBadge').style.display='block';
 
   $('runSheetMeta').innerHTML=`
     <div class="rs-stat"><div class="rs-stat-val">${total}</div><div class="rs-stat-label">Programs</div></div>
@@ -746,6 +797,7 @@ function renderRunSheet(filename){
         </div>`;
       row.querySelector('.slot-remove-btn').addEventListener('click',()=>{
         runSheetItems.splice(index,1);
+        saveRunSheet(filename);
         renderRunSheet(filename);
       });
       timeline.appendChild(row);
@@ -773,15 +825,19 @@ function closeSlotModal(){$('slotModalBackdrop').classList.remove('show');}
 $('slotModalClose').addEventListener('click',closeSlotModal);
 $('slotCancel').addEventListener('click',closeSlotModal);
 $('slotModalBackdrop').addEventListener('click',e=>{if(e.target===$('slotModalBackdrop'))closeSlotModal();});
+function currentFilename(){
+  const metaText=$('stageMeta').textContent;
+  return metaText.split('·')[0].trim()||'program.pdf';
+}
+
 $('slotSave').addEventListener('click',()=>{
   const name=$('s-name').value.trim();
   if(!name){$('s-name').focus();return;}
   const slotType=$('s-type').value;
   runSheetItems.splice(_insertIndex,0,{type:'slot',data:{name,slotType}});
   closeSlotModal();
-  // Re-render preserving filename from meta
-  const metaText=$('stageMeta').textContent;
-  const fn=metaText.split('·')[0].trim()||'program.pdf';
+  const fn=currentFilename();
+  saveRunSheet(fn);
   renderRunSheet(fn);
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('slotModalBackdrop').classList.contains('show'))closeSlotModal();});
