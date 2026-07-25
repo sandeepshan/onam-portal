@@ -568,7 +568,27 @@ function renderCards(submissions){const grid=$('cardsGrid');grid.innerHTML='';al
 function prependCard(submission){const grid=$('cardsGrid');const all=[submission,...allCards.map(c=>c.submission)];const wd=detectDups(all);submission.isDuplicate=wd[0].isDuplicate;const card=buildCard(submission,0);card.style.opacity='0';card.style.transform='translateY(-8px)';grid.prepend(card);const entry={el:card,submission,removed:false};allCards.unshift(entry);requestAnimationFrame(()=>{card.style.transition='opacity 0.3s ease,transform 0.3s ease';card.style.opacity='1';card.style.transform='translateY(0)';});allCards.forEach((c,i)=>{const n=c.el.querySelector('.card-num');if(n)n.textContent=`#${i+1}`;});updateStats();showState('cards');$('statsStrip').classList.add('show');$('toolbar').style.display='';applyFilters();}
 $('searchInput').addEventListener('input',e=>{searchQuery=e.target.value;applyFilters();});
 document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));activeFilter=btn.dataset.filter;btn.classList.add(activeFilter==='duplicates'?'active-warn':'active');applyFilters();}));
-async function loadSubmissions(){showState('loading');$('statsStrip').classList.remove('show');$('toolbar').style.display='none';searchQuery='';activeFilter='all';document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));document.querySelector('[data-filter="all"]').classList.add('active');$('searchInput').value='';try{const res=await fetch('/.netlify/functions/get-submissions');const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not load submissions.');renderCards(data.submissions||[]);}catch(err){showState('error');$('errorMsg').textContent=err.message||'Something went wrong.';}
+async function loadSubmissions(){
+  showState('loading');
+  $('statsStrip').classList.remove('show');
+  $('toolbar').style.display='none';
+  searchQuery='';activeFilter='all';
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));
+  document.querySelector('[data-filter="all"]').classList.add('active');
+  $('searchInput').value='';
+  try{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),15000);
+    const res=await fetch('/.netlify/functions/get-submissions',{signal:controller.signal});
+    clearTimeout(timer);
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.ok)throw new Error(data.error||'Could not load submissions.');
+    renderCards(data.submissions||[]);
+  }catch(err){
+    showState('error');
+    $('errorMsg').textContent=err.name==='AbortError'?'Loading timed out — please refresh.':err.message||'Something went wrong.';
+  }
+}
 $('refreshBtn').addEventListener('click',loadSubmissions);
 // Add card modal
 const backdrop=$('modalBackdrop');
