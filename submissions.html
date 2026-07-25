@@ -568,7 +568,7 @@ function renderCards(submissions){const grid=$('cardsGrid');grid.innerHTML='';al
 function prependCard(submission){const grid=$('cardsGrid');const all=[submission,...allCards.map(c=>c.submission)];const wd=detectDups(all);submission.isDuplicate=wd[0].isDuplicate;const card=buildCard(submission,0);card.style.opacity='0';card.style.transform='translateY(-8px)';grid.prepend(card);const entry={el:card,submission,removed:false};allCards.unshift(entry);requestAnimationFrame(()=>{card.style.transition='opacity 0.3s ease,transform 0.3s ease';card.style.opacity='1';card.style.transform='translateY(0)';});allCards.forEach((c,i)=>{const n=c.el.querySelector('.card-num');if(n)n.textContent=`#${i+1}`;});updateStats();showState('cards');$('statsStrip').classList.add('show');$('toolbar').style.display='';applyFilters();}
 $('searchInput').addEventListener('input',e=>{searchQuery=e.target.value;applyFilters();});
 document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));activeFilter=btn.dataset.filter;btn.classList.add(activeFilter==='duplicates'?'active-warn':'active');applyFilters();}));
-async function loadSubmissions(){showState('loading');$('statsStrip').classList.remove('show');$('toolbar').style.display='none';searchQuery='';activeFilter='all';document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));document.querySelector('[data-filter="all"]').classList.add('active');$('searchInput').value='';try{const res=await fetch('/.netlify/functions/get-submissions');const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not load submissions.');renderCards(data.submissions||[]);}catch(err){showState('error');$('errorMsg').textContent=err.message||'Something went wrong.';}}
+async function loadSubmissions(){showState('loading');$('statsStrip').classList.remove('show');$('toolbar').style.display='none';searchQuery='';activeFilter='all';document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));document.querySelector('[data-filter="all"]').classList.add('active');$('searchInput').value='';try{const res=await fetch('/.netlify/functions/get-submissions');const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not load submissions.');renderCards(data.submissions||[]);}catch(err){showState('error');$('errorMsg').textContent=err.message||'Something went wrong.';} }}
 $('refreshBtn').addEventListener('click',loadSubmissions);
 // Add card modal
 const backdrop=$('modalBackdrop');
@@ -617,8 +617,13 @@ async function loadSavedRunSheet(){
     dz.style.display='none';
     $('runSheet').style.display='block';
     $('clearRunSheet').style.display='';
-    // Re-render submission cards to show program number badges
-    if(allCards.length){const subs=allCards.map(c=>c.submission);renderCards(subs);}
+    // Re-render submission cards so program number badges appear
+    if(allCards.length){
+      const subs=allCards.map(c=>c.submission);
+      renderCards(subs);
+    } else {
+      // Cards not yet loaded — they'll pick up runSheetItems when they load
+    }
     return true;
   }catch(e){
     $('stageParsing').style.display='none';
@@ -694,43 +699,42 @@ async function parsePDF(file){
 }
 
 function parseRunSheet(lines){
-  // Lines from the PDF look like (reconstructed from Y positions):
-  //   "1  Welcome speech  4:00 PM"
-  //   "2  Tatva Sparkling Stars"
-  //   "Group Dance · Lead: Payal Kumar"
-  //   "Dania Jestin · Jessica Isaac · ..."
-  //   "4:04 PM"
-  //   "→ 4:09 PM"
-  //
-  // Strategy: scan lines for a leading programme number, then accumulate
-  // subsequent lines until the next number, extracting type/lead/participants/time.
-
   const programs=[];
   const timeRe=/^(\d{1,2}:\d{2}\s*(?:AM|PM))$/i;
   const arrowTimeRe=/^[→>]\s*(\d{1,2}:\d{2}\s*(?:AM|PM))$/i;
   const inlineTimeRe=/(\d{1,2}:\d{2}\s*(?:AM|PM))/i;
-  // A line starting a new program: number then space then text
-  const progStartRe=/^(\d{1,2})\s+(.+)$/;
-  // Skip pure header/footer lines
-  const skipRe=/kalasandhya|wmcg|geelong|confidential|committee|running order|printed|programs\s+\d|participants\s+\d|show duration|est\.\s*finish|https?:/i;
+  const progStartRe=/^(\d{1,2})\s+([A-Za-z].+)$/;
 
-  // First pass: bucket lines into program blocks
-  const blocks=[]; // [{num, lines:[]}]
+  // Skip header/footer/stats lines
+  const skipRe=/kalasandhya|wmcg|geelong|confidential|committee|running order|printed|^programs\b|^participants\b|show duration|est\.\s*finish|https?:|^\d+h\s+\d+m|3h|onam celebrations|saturday|august|4:00 pm – est/i;
+
+  // Also skip lines that are purely numeric stats (e.g. "92" "16" "3h 11m")
+  const pureStatRe=/^[\d\s hm]+$/;
+
+  const blocks=[];
   let current=null;
 
   for(const raw of lines){
     const line=raw.trim();
-    if(!line||skipRe.test(line))continue;
+    if(!line)continue;
+    if(skipRe.test(line))continue;
+    if(pureStatRe.test(line))continue;
 
     const m=line.match(progStartRe);
     if(m){
       const num=parseInt(m[1]);
-      // Only accept numbers 1-99 that look like program numbers
-      if(num>=1&&num<=99){
-        if(current)blocks.push(current);
-        current={num,lines:[m[2].trim()]};
-        continue;
-      }
+      const rest=m[2].trim();
+
+      // Reject if the text after the number looks like stats/header content
+      if(skipRe.test(rest)||pureStatRe.test(rest))continue;
+      // Reject numbers > 50 (no event has that many programs)
+      if(num>50)continue;
+      // Reject if the rest is very short and numeric-looking
+      if(rest.length<3)continue;
+
+      if(current)blocks.push(current);
+      current={num,lines:[rest]};
+      continue;
     }
     if(current)current.lines.push(line);
   }
@@ -747,11 +751,9 @@ function parseRunSheet(lines){
 
     const bodyLines=block.lines;
 
-    // First line of the block is always the program name (possibly with inline type)
+    // First line is always the program name
     let nameLine=bodyLines[0]||'';
-    // Strip any trailing time from the name line
     nameLine=nameLine.replace(/\s+\d{1,2}:\d{2}\s*(?:AM|PM).*/i,'').trim();
-    // Strip type from name line if it's embedded
     const typeInName=nameLine.match(typeRe);
     if(typeInName){
       name=nameLine.slice(0,typeInName.index).trim();
@@ -760,50 +762,45 @@ function parseRunSheet(lines){
       name=nameLine;
     }
 
-    // Scan remaining lines for type, lead, participants, times
     for(let i=1;i<bodyLines.length;i++){
       const l=bodyLines[i].trim();
       if(!l)continue;
 
-      // Time lines
       if(timeRe.test(l)){if(!startTime)startTime=l.trim();continue;}
       const arrowM=l.match(arrowTimeRe);
       if(arrowM){endTime=arrowM[1].trim();continue;}
 
-      // Type + lead on same line: "Group Dance · Lead: Payal Kumar"
+      // Type + lead: "Group Dance · Lead: Payal Kumar"
       const typeLeadM=l.match(/(.+?)\s*[·•]\s*Lead:\s*(.+)/i);
       if(typeLeadM){
         if(!type)type=typeLeadM[1].trim();
         lead=typeLeadM[2].trim();
-        // Lead is exactly what's here — no bleed since it's its own line now
         continue;
       }
 
-      // Lead-only line: "Lead: Payal Kumar"
+      // Lead only: "Lead: Payal Kumar"
       const leadOnlyM=l.match(leadRe);
       if(leadOnlyM){lead=leadOnlyM[1].trim();continue;}
 
-      // Type-only line
+      // Type only
       if(typeRe.test(l)&&!type){type=l;continue;}
 
-      // Participant line — contains · separators or is a name-looking line after lead is set
+      // Participant line
       if(l.includes('·')||l.includes('•')){
         const parts=l.split(/[·•]/).map(p=>p.trim()).filter(p=>p.length>1&&p.length<60&&!/\d{1,2}:\d{2}/.test(p));
         participants.push(...parts);
         continue;
       }
 
-      // Inline time on a non-time line — extract it
+      // Inline time
       const inlineT=l.match(inlineTimeRe);
       if(inlineT&&!startTime){startTime=inlineT[1].trim();}
     }
 
-    // Clean up: remove lead from participants if it snuck in
     if(lead){
       participants=participants.filter(p=>p.toLowerCase().trim()!==lead.toLowerCase().trim());
     }
 
-    // Only add if we got a real program name (not empty, not just punctuation)
     if(name&&name.length>1){
       programs.push({num:block.num,name,type,lead,participants,startTime,endTime});
     }
@@ -946,7 +943,13 @@ $('slotSave').addEventListener('click',()=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('slotModalBackdrop').classList.contains('show'))closeSlotModal();});
 
-loadSubmissions();
+// Load run sheet from Drive immediately on page start so card badges
+// are populated even before the emcee tab is opened.
+// We load submissions first, then run sheet. After both resolve,
+// re-render cards to apply any badges.
+loadSubmissions().then(()=>{
+  loadSavedRunSheet();
+});
 })();
 </script>
 </body>
