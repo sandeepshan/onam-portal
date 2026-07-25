@@ -19,7 +19,6 @@
     --ink: #1F1B16;
     --ink-soft: #5B5246;
     --gold: #E0A23B;
-    --white: #ffffff;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -31,7 +30,6 @@
     min-height: 100vh;
   }
 
-  /* Top stripe — same as upload portal */
   body::before {
     content: '';
     position: fixed;
@@ -44,88 +42,115 @@
 
   /* ── Header ── */
   .site-header {
-    padding: 40px 40px 28px;
-    border-bottom: 1px solid rgba(31,27,22,0.08);
+    padding: 40px 48px 32px;
+    margin-top: 6px;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
-    margin-top: 6px;
+    border-bottom: 1px solid rgba(31,27,22,0.08);
   }
 
-  .header-left .eyebrow {
-    font-size: 12px;
-    letter-spacing: 0.16em;
+  .eyebrow {
+    font-size: 11.5px;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--leaf);
     font-weight: 600;
     margin-bottom: 6px;
   }
 
-  .header-left h1 {
+  h1 {
     font-family: 'Fraunces', serif;
     font-weight: 600;
-    font-size: clamp(24px, 4vw, 36px);
+    font-size: clamp(26px, 4vw, 38px);
     line-height: 1.1;
     color: var(--ink);
     letter-spacing: -0.01em;
   }
 
-  .header-left h1 em {
+  h1 em {
     font-style: italic;
     color: var(--coral);
     font-weight: 500;
   }
 
-  .header-right {
+  .header-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 10px;
   }
-
-  .count-badge {
-    background: var(--leaf);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 6px 14px;
-    border-radius: 2px;
-    letter-spacing: 0.02em;
-    display: none;
-  }
-  .count-badge.show { display: inline-block; }
 
   .refresh-btn {
     background: none;
-    border: 1.5px solid rgba(31,27,22,0.18);
+    border: 1.5px solid rgba(31,27,22,0.15);
     color: var(--ink-soft);
     font-family: 'Work Sans', sans-serif;
     font-size: 13px;
     font-weight: 500;
-    padding: 6px 14px;
+    padding: 7px 16px;
     border-radius: 2px;
     cursor: pointer;
     transition: border-color 0.15s, color 0.15s;
   }
   .refresh-btn:hover { border-color: var(--ochre); color: var(--ochre-deep); }
 
-  /* ── Filter / search bar ── */
-  .toolbar {
-    padding: 18px 40px;
-    border-bottom: 1px solid rgba(31,27,22,0.06);
+  /* ── Stats strip ── */
+  .stats-strip {
+    display: none;
+    padding: 24px 48px;
+    gap: 0;
+    border-bottom: 1px solid rgba(31,27,22,0.08);
+    background: #fff;
+  }
+  .stats-strip.show {
     display: flex;
-    gap: 12px;
-    align-items: center;
     flex-wrap: wrap;
+  }
+
+  .stat {
+    flex: 1;
+    min-width: 120px;
+    padding: 4px 24px 4px 0;
+    border-right: 1px solid rgba(31,27,22,0.08);
+    margin-right: 24px;
+  }
+  .stat:last-child { border-right: none; margin-right: 0; }
+
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--leaf);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-value.warn { color: var(--coral); }
+
+  .stat-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    padding: 18px 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid rgba(31,27,22,0.06);
   }
 
   .search-wrap {
     position: relative;
     flex: 1;
     min-width: 200px;
-    max-width: 360px;
+    max-width: 380px;
   }
 
   .search-wrap svg {
@@ -133,157 +158,217 @@
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    opacity: 0.35;
+    opacity: 0.3;
     pointer-events: none;
   }
 
   .search-input {
     width: 100%;
-    padding: 9px 12px 9px 36px;
+    padding: 9px 12px 9px 38px;
     font-family: 'Work Sans', sans-serif;
     font-size: 14px;
     color: var(--ink);
-    background: var(--white);
+    background: #fff;
     border: 1.5px solid rgba(31,27,22,0.12);
     border-radius: 2px;
     outline: none;
     transition: border-color 0.15s;
   }
   .search-input:focus { border-color: var(--ochre); }
-  .search-input::placeholder { color: rgba(31,27,22,0.32); }
+  .search-input::placeholder { color: rgba(31,27,22,0.3); }
 
-  .result-count {
+  .filter-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    background: none;
+    border: 1.5px solid rgba(31,27,22,0.12);
+    color: var(--ink-soft);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .filter-btn:hover { border-color: var(--ochre); color: var(--ochre-deep); }
+  .filter-btn.active {
+    background: var(--leaf);
+    border-color: var(--leaf);
+    color: #fff;
+  }
+  .filter-btn.active-warn {
+    background: var(--coral);
+    border-color: var(--coral);
+    color: #fff;
+  }
+
+  .result-label {
     font-size: 13px;
     color: var(--ink-soft);
+    margin-left: auto;
     white-space: nowrap;
   }
 
-  /* ── Table ── */
-  .table-wrap {
-    padding: 0 40px 60px;
-    overflow-x: auto;
+  /* ── Cards grid ── */
+  .cards-wrap {
+    padding: 32px 48px 72px;
   }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 24px;
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 18px;
   }
 
-  thead th {
-    text-align: left;
-    font-size: 11.5px;
+  .card {
+    background: #fff;
+    border: 1px solid rgba(31,27,22,0.08);
+    border-radius: 3px;
+    padding: 24px 26px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    position: relative;
+  }
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(31,27,22,0.07);
+    border-color: rgba(31,27,22,0.14);
+  }
+
+  .card.is-duplicate {
+    border-color: rgba(217,74,61,0.3);
+    border-left: 3px solid var(--coral);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .card-num {
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--leaf);
-    padding: 0 16px 12px;
-    border-bottom: 2px solid var(--leaf);
-    white-space: nowrap;
-  }
-
-  thead th:first-child { padding-left: 0; }
-  thead th:last-child { padding-right: 0; }
-
-  /* Column widths */
-  .col-num    { width: 40px; }
-  .col-prog   { width: 220px; min-width: 160px; }
-  .col-desc   { min-width: 280px; }
-  .col-name   { width: 160px; min-width: 120px; }
-  .col-date   { width: 150px; min-width: 120px; }
-  .col-type   { width: 72px; }
-
-  tbody tr {
-    border-bottom: 1px solid rgba(31,27,22,0.07);
-    transition: background 0.1s;
-  }
-  tbody tr:hover { background: rgba(201,118,44,0.04); }
-  tbody tr.hidden { display: none; }
-
-  tbody td {
-    padding: 16px 16px;
-    vertical-align: top;
-    font-size: 14.5px;
-    line-height: 1.5;
-  }
-  tbody td:first-child { padding-left: 0; }
-  tbody td:last-child { padding-right: 0; }
-
-  .td-num {
     color: var(--ink-soft);
-    font-size: 12px;
-    font-weight: 600;
-    padding-top: 18px;
+    opacity: 0.5;
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
   }
 
-  .prog-name {
+  .card-program {
     font-family: 'Fraunces', serif;
     font-weight: 600;
-    font-size: 15.5px;
+    font-size: 18px;
+    line-height: 1.25;
     color: var(--ink);
-    line-height: 1.3;
-  }
-
-  .td-desc {
-    color: var(--ink-soft);
-    font-size: 14px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  .td-name {
-    font-weight: 500;
-    color: var(--ink);
-    font-size: 14px;
-  }
-
-  .td-date {
-    font-size: 12.5px;
-    color: var(--ink-soft);
-    white-space: nowrap;
+    flex: 1;
   }
 
   .type-pill {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .type-pill.audio { background: rgba(224,162,59,0.14); color: var(--ochre-deep); }
+  .type-pill.video { background: rgba(47,79,58,0.1); color: var(--leaf-deep); }
+
+  .dup-badge {
+    display: none;
+    align-items: center;
+    gap: 5px;
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.05em;
+    color: var(--coral);
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    padding: 3px 8px;
-    border-radius: 2px;
+    margin-top: 2px;
   }
-  .type-pill.audio {
-    background: rgba(224,162,59,0.15);
-    color: var(--ochre-deep);
+  .card.is-duplicate .dup-badge { display: flex; }
+
+  .card-desc {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+    word-break: break-word;
   }
-  .type-pill.video {
-    background: rgba(47,79,58,0.1);
-    color: var(--leaf-deep);
+
+  .card-desc.none {
+    color: rgba(91,82,70,0.4);
+    font-style: italic;
+  }
+
+  /* Truncation */
+  .card-desc.truncated {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .expand-btn {
+    background: none;
+    border: none;
+    color: var(--ochre);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    margin-top: -6px;
+    text-align: left;
+  }
+  .expand-btn:hover { color: var(--ochre-deep); }
+
+  .card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid rgba(31,27,22,0.06);
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .card-date {
+    font-size: 12px;
+    color: var(--ink-soft);
   }
 
   /* ── States ── */
   .state {
-    padding: 80px 40px;
+    padding: 80px 48px;
     text-align: center;
   }
-  .state-icon { font-size: 40px; margin-bottom: 16px; }
+  .state-icon { font-size: 42px; margin-bottom: 18px; }
   .state h2 {
     font-family: 'Fraunces', serif;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 600;
     color: var(--ink);
     margin-bottom: 8px;
   }
-  .state p {
-    font-size: 14.5px;
-    color: var(--ink-soft);
-    line-height: 1.6;
-    max-width: 340px;
-    margin: 0 auto;
-  }
+  .state p { font-size: 14.5px; color: var(--ink-soft); line-height: 1.6; max-width: 340px; margin: 0 auto; }
 
   .spinner {
     width: 32px; height: 32px;
@@ -291,7 +376,7 @@
     border-top-color: var(--ochre);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
-    margin: 0 auto 16px;
+    margin: 0 auto 18px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -306,17 +391,17 @@
     margin: 0 auto;
   }
 
-  /* ── No-results row ── */
-  .no-results-row td {
+  .empty-cards {
+    padding: 60px 48px;
     text-align: center;
-    padding: 48px 16px;
     color: var(--ink-soft);
-    font-size: 14px;
+    font-size: 14.5px;
   }
 
   @media (max-width: 600px) {
-    .site-header, .toolbar, .table-wrap { padding-left: 18px; padding-right: 18px; }
-    .col-name, .col-date, .col-type { display: none; }
+    .site-header, .stats-strip, .toolbar, .cards-wrap { padding-left: 18px; padding-right: 18px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .stat { min-width: 100px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -327,17 +412,41 @@
 <body>
 
 <header class="site-header">
-  <div class="header-left">
+  <div>
     <div class="eyebrow">Kalasandhya 2026</div>
     <h1>Program <em>submissions</em></h1>
   </div>
-  <div class="header-right">
-    <span class="count-badge" id="countBadge"></span>
+  <div class="header-actions">
     <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
   </div>
 </header>
 
-<div class="toolbar">
+<!-- Stats strip -->
+<div class="stats-strip" id="statsStrip">
+  <div class="stat">
+    <div class="stat-value" id="statTotal">—</div>
+    <div class="stat-label">Total submissions</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="statAudio">—</div>
+    <div class="stat-label">Audio</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="statVideo">—</div>
+    <div class="stat-label">Video</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="statNoDesc">—</div>
+    <div class="stat-label">No description</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value warn" id="statDups">—</div>
+    <div class="stat-label">Possible duplicates</div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar" id="toolbar" style="display:none">
   <div class="search-wrap">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <circle cx="6.5" cy="6.5" r="4.5" stroke="#1F1B16" stroke-width="1.5"/>
@@ -345,179 +454,243 @@
     </svg>
     <input type="text" class="search-input" id="searchInput" placeholder="Search by program, name, or description…">
   </div>
-  <span class="result-count" id="resultCount"></span>
+  <div class="filter-btns">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="audio">🎵 Audio</button>
+    <button class="filter-btn" data-filter="video">🎬 Video</button>
+    <button class="filter-btn" data-filter="duplicates" id="dupFilterBtn">⚠️ Duplicates</button>
+  </div>
+  <span class="result-label" id="resultLabel"></span>
 </div>
 
-<div id="mainContent">
-  <div class="state" id="loadingState">
-    <div class="spinner"></div>
-    <h2>Loading submissions</h2>
-    <p>Reading from Drive…</p>
+<!-- Main content -->
+<div id="loadingState" class="state">
+  <div class="spinner"></div>
+  <h2>Loading submissions</h2>
+  <p>Reading from Drive…</p>
+</div>
+
+<div id="errorState" class="state" style="display:none">
+  <div class="state-icon">⚠️</div>
+  <div class="error-box" id="errorMsg"></div>
+</div>
+
+<div id="cardsState" style="display:none">
+  <div class="cards-wrap">
+    <div class="cards-grid" id="cardsGrid"></div>
+    <div class="empty-cards" id="emptyCards" style="display:none">No programs match your search.</div>
   </div>
-  <div class="state" id="errorState" style="display:none">
-    <div class="state-icon">⚠️</div>
-    <div class="error-box" id="errorMsg"></div>
-  </div>
-  <div id="tableState" style="display:none">
-    <div class="table-wrap">
-      <table id="submissionsTable">
-        <thead>
-          <tr>
-            <th class="col-num">#</th>
-            <th class="col-prog">Program</th>
-            <th class="col-desc">Description</th>
-            <th class="col-name">Submitted by</th>
-            <th class="col-date">Date</th>
-            <th class="col-type">Type</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-  </div>
-  <div class="state" id="emptyState" style="display:none">
-    <div class="state-icon">🌺</div>
-    <h2>No submissions yet</h2>
-    <p>Once participants upload their entries, they'll appear here.</p>
-  </div>
+</div>
+
+<div id="emptyState" class="state" style="display:none">
+  <div class="state-icon">🌺</div>
+  <h2>No submissions yet</h2>
+  <p>Once participants upload their entries, they'll appear here.</p>
 </div>
 
 <script>
 (function () {
-  const loadingState = document.getElementById('loadingState');
-  const errorState   = document.getElementById('errorState');
-  const tableState   = document.getElementById('tableState');
-  const emptyState   = document.getElementById('emptyState');
-  const errorMsg     = document.getElementById('errorMsg');
-  const tableBody    = document.getElementById('tableBody');
-  const countBadge   = document.getElementById('countBadge');
-  const resultCount  = document.getElementById('resultCount');
-  const searchInput  = document.getElementById('searchInput');
-  const refreshBtn   = document.getElementById('refreshBtn');
+  const $ = id => document.getElementById(id);
 
-  let allRows = [];
+  const states = {
+    loading: $('loadingState'),
+    error:   $('errorState'),
+    cards:   $('cardsState'),
+    empty:   $('emptyState'),
+  };
 
   function showState(which) {
-    [loadingState, errorState, tableState, emptyState].forEach(el => el.style.display = 'none');
-    which.style.display = '';
+    Object.values(states).forEach(el => el.style.display = 'none');
+    states[which].style.display = '';
   }
 
   function fileType(mediaFile) {
     if (!mediaFile) return 'unknown';
-    const ext = mediaFile.split('.').pop().toLowerCase();
-    const audioExts = ['mp3','wav','aac','flac','ogg','m4a','aiff'];
-    return audioExts.includes(ext) ? 'audio' : 'video';
+    const ext = (mediaFile.split('.').pop() || '').toLowerCase();
+    return ['mp3','wav','aac','flac','ogg','m4a','aiff'].includes(ext) ? 'audio' : 'video';
   }
 
   function formatDate(submitted) {
     if (!submitted) return '—';
-    // Already formatted as "20/07/2026, 3:23:32 pm" — just show date part
     return submitted.split(',')[0] || submitted;
   }
 
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+  function escHtml(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function renderTable(submissions) {
-    tableBody.innerHTML = '';
-    allRows = [];
+  // Detect duplicates: same program name (case-insensitive) OR same email
+  function detectDuplicates(submissions) {
+    const programCount = {};
+    const emailCount = {};
+    submissions.forEach(s => {
+      const pk = (s.program || '').toLowerCase().trim();
+      const ek = (s.email || '').toLowerCase().trim();
+      if (pk) programCount[pk] = (programCount[pk] || 0) + 1;
+      if (ek) emailCount[ek] = (emailCount[ek] || 0) + 1;
+    });
+    return submissions.map(s => {
+      const pk = (s.program || '').toLowerCase().trim();
+      const ek = (s.email || '').toLowerCase().trim();
+      const isDup = (programCount[pk] > 1) || (emailCount[ek] > 1);
+      return { ...s, isDuplicate: isDup };
+    });
+  }
 
-    if (submissions.length === 0) {
-      showState(emptyState);
-      countBadge.classList.remove('show');
-      resultCount.textContent = '';
-      return;
+  let allCards = [];
+  let activeFilter = 'all';
+  let searchQuery = '';
+
+  function applyFilters() {
+    const q = searchQuery.toLowerCase();
+    let shown = 0;
+
+    allCards.forEach(({ el, submission }) => {
+      const matchSearch = !q ||
+        (submission.program || '').toLowerCase().includes(q) ||
+        (submission.name || '').toLowerCase().includes(q) ||
+        (submission.description || '').toLowerCase().includes(q);
+
+      const type = fileType(submission.mediaFile);
+      const matchFilter =
+        activeFilter === 'all' ||
+        (activeFilter === 'audio' && type === 'audio') ||
+        (activeFilter === 'video' && type === 'video') ||
+        (activeFilter === 'duplicates' && submission.isDuplicate);
+
+      const visible = matchSearch && matchFilter;
+      el.style.display = visible ? '' : 'none';
+      if (visible) shown++;
+    });
+
+    $('emptyCards').style.display = shown === 0 ? '' : 'none';
+    $('resultLabel').textContent = shown === allCards.length
+      ? `${allCards.length} submission${allCards.length !== 1 ? 's' : ''}`
+      : `${shown} of ${allCards.length} shown`;
+  }
+
+  function renderCards(submissions) {
+    const grid = $('cardsGrid');
+    grid.innerHTML = '';
+    allCards = [];
+
+    if (!submissions.length) { showState('empty'); return; }
+
+    const withDups = detectDuplicates(submissions);
+    const dupCount = withDups.filter(s => s.isDuplicate).length;
+    const audioCount = withDups.filter(s => fileType(s.mediaFile) === 'audio').length;
+    const videoCount = withDups.filter(s => fileType(s.mediaFile) === 'video').length;
+    const noDescCount = withDups.filter(s => !s.description || s.description === '(none provided)').length;
+
+    // Stats
+    $('statTotal').textContent = submissions.length;
+    $('statAudio').textContent = audioCount;
+    $('statVideo').textContent = videoCount;
+    $('statNoDesc').textContent = noDescCount;
+    $('statDups').textContent = dupCount;
+    $('statsStrip').classList.add('show');
+    $('toolbar').style.display = '';
+
+    // Update dup filter button label
+    if (dupCount > 0) {
+      $('dupFilterBtn').textContent = `⚠️ Duplicates (${dupCount})`;
     }
 
-    submissions.forEach((s, i) => {
+    withDups.forEach((s, i) => {
       const type = fileType(s.mediaFile);
-      const tr = document.createElement('tr');
-      tr.dataset.search = [s.program, s.name, s.description].join(' ').toLowerCase();
+      const hasDesc = s.description && s.description !== '(none provided)';
+      const isLong = hasDesc && s.description.length > 280;
+
+      const card = document.createElement('div');
+      card.className = 'card' + (s.isDuplicate ? ' is-duplicate' : '');
 
       const typeLabel = type === 'audio'
         ? `<span class="type-pill audio">🎵 Audio</span>`
         : `<span class="type-pill video">🎬 Video</span>`;
 
-      tr.innerHTML = `
-        <td class="td-num">${i + 1}</td>
-        <td><div class="prog-name">${escapeHtml(s.program || '—')}</div></td>
-        <td><div class="td-desc">${escapeHtml(s.description || '—')}</div></td>
-        <td class="td-name col-name">${escapeHtml(s.name || '—')}</td>
-        <td class="td-date col-date">${escapeHtml(formatDate(s.submitted))}</td>
-        <td class="col-type">${typeLabel}</td>
+      const descHtml = hasDesc
+        ? `<div class="card-desc${isLong ? ' truncated' : ''}" id="desc-${i}">${escHtml(s.description)}</div>${isLong ? `<button class="expand-btn" data-target="desc-${i}">Show more ↓</button>` : ''}`
+        : `<div class="card-desc none">No description provided</div>`;
+
+      card.innerHTML = `
+        <div>
+          <div class="card-num">#${i + 1}</div>
+          <div class="card-top">
+            <div class="card-program">${escHtml(s.program || '—')}</div>
+            ${typeLabel}
+          </div>
+          <div class="dup-badge">⚠ Possible duplicate</div>
+        </div>
+        ${descHtml}
+        <div class="card-foot">
+          <span class="card-name">${escHtml(s.name || '—')}</span>
+          <span class="card-date">${escHtml(formatDate(s.submitted))}</span>
+        </div>
       `;
 
-      tableBody.appendChild(tr);
-      allRows.push(tr);
+      // Expand/collapse long descriptions
+      const expandBtn = card.querySelector('.expand-btn');
+      if (expandBtn) {
+        expandBtn.addEventListener('click', () => {
+          const descEl = card.querySelector(`#desc-${i}`);
+          const expanded = !descEl.classList.contains('truncated');
+          descEl.classList.toggle('truncated', expanded);
+          expandBtn.textContent = expanded ? 'Show more ↓' : 'Show less ↑';
+        });
+      }
+
+      grid.appendChild(card);
+      allCards.push({ el: card, submission: s });
     });
 
-    showState(tableState);
-    countBadge.textContent = `${submissions.length} submission${submissions.length !== 1 ? 's' : ''}`;
-    countBadge.classList.add('show');
-    updateResultCount(submissions.length, submissions.length);
+    showState('cards');
+    applyFilters();
   }
 
-  function updateResultCount(shown, total) {
-    if (shown === total) {
-      resultCount.textContent = `${total} submission${total !== 1 ? 's' : ''}`;
-    } else {
-      resultCount.textContent = `${shown} of ${total} shown`;
-    }
-  }
+  // Search
+  $('searchInput').addEventListener('input', e => {
+    searchQuery = e.target.value;
+    applyFilters();
+  });
 
-  function applySearch(query) {
-    const q = query.trim().toLowerCase();
-    let shown = 0;
-
-    // Remove any existing no-results row
-    const existing = tableBody.querySelector('.no-results-row');
-    if (existing) existing.remove();
-
-    allRows.forEach(tr => {
-      const match = !q || tr.dataset.search.includes(q);
-      tr.classList.toggle('hidden', !match);
-      if (match) shown++;
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('active', 'active-warn');
+      });
+      activeFilter = btn.dataset.filter;
+      btn.classList.add(activeFilter === 'duplicates' ? 'active-warn' : 'active');
+      applyFilters();
     });
-
-    updateResultCount(shown, allRows.length);
-
-    if (shown === 0 && allRows.length > 0) {
-      const noRow = document.createElement('tr');
-      noRow.className = 'no-results-row';
-      noRow.innerHTML = `<td colspan="6">No programs match "${escapeHtml(query)}"</td>`;
-      tableBody.appendChild(noRow);
-    }
-  }
+  });
 
   async function loadSubmissions() {
-    showState(loadingState);
-    countBadge.classList.remove('show');
-    resultCount.textContent = '';
-    searchInput.value = '';
+    showState('loading');
+    $('statsStrip').classList.remove('show');
+    $('toolbar').style.display = 'none';
+    searchQuery = '';
+    activeFilter = 'all';
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.remove('active', 'active-warn');
+    });
+    document.querySelector('[data-filter="all"]').classList.add('active');
+    $('searchInput').value = '';
 
     try {
       const res = await fetch('/.netlify/functions/get-submissions');
       const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Could not load submissions.');
-      }
-
-      renderTable(data.submissions || []);
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load submissions.');
+      renderCards(data.submissions || []);
     } catch (err) {
-      showState(errorState);
-      errorMsg.textContent = err.message || 'Something went wrong. Please refresh and try again.';
+      showState('error');
+      $('errorMsg').textContent = err.message || 'Something went wrong. Please refresh and try again.';
     }
   }
 
-  searchInput.addEventListener('input', () => applySearch(searchInput.value));
-  refreshBtn.addEventListener('click', loadSubmissions);
-
+  $('refreshBtn').addEventListener('click', loadSubmissions);
   loadSubmissions();
 })();
 </script>
