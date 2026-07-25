@@ -509,7 +509,7 @@ $('tabStage').addEventListener('click',()=>{
   document.body.style.background='var(--stage-bg)';
   // Restore saved run sheet if not already showing
   if($('runSheet').style.display==='none'&&$('stageParsing').style.display==='none'){
-    loadSavedRunSheet();
+    loadSavedRunSheet(true);
   }
 });
 
@@ -604,30 +604,28 @@ async function saveRunSheet(filename){
   finally{_isSaving=false;}
 }
 
-async function loadSavedRunSheet(){
-  $('stageParsing').style.display='block';
-  dz.style.display='none';
+async function loadSavedRunSheet(showSpinner=false){
+  if(showSpinner){$('stageParsing').style.display='block';dz.style.display='none';}
   try{
     const res=await fetch('/.netlify/functions/load-runsheet');
     const data=await res.json().catch(()=>({}));
-    $('stageParsing').style.display='none';
-    if(!data.ok||!data.items||!data.items.length){dz.style.display='';return false;}
+    if(showSpinner)$('stageParsing').style.display='none';
+    if(!data.ok||!data.items||!data.items.length){
+      if(showSpinner)dz.style.display='';
+      return false;
+    }
     runSheetItems=data.items;
     renderRunSheet(data.filename||'program.pdf');
     dz.style.display='none';
     $('runSheet').style.display='block';
     $('clearRunSheet').style.display='';
-    // Re-render submission cards so program number badges appear
     if(allCards.length){
       const subs=allCards.map(c=>c.submission);
       renderCards(subs);
-    } else {
-      // Cards not yet loaded — they'll pick up runSheetItems when they load
     }
     return true;
   }catch(e){
-    $('stageParsing').style.display='none';
-    dz.style.display='';
+    if(showSpinner){$('stageParsing').style.display='none';dz.style.display='';}
     return false;
   }
 }
@@ -945,11 +943,17 @@ $('slotSave').addEventListener('click',()=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('slotModalBackdrop').classList.contains('show'))closeSlotModal();});
 
-// Load run sheet first so badges are ready, then load submission cards
-loadSavedRunSheet().then(()=>{
-  loadSubmissions();
-}).catch(()=>{
-  loadSubmissions();
+// Load run sheet and submissions in parallel — don't let one block the other.
+// After both resolve, re-render cards so program badges appear.
+Promise.all([
+  loadSavedRunSheet().catch(()=>false),
+  loadSubmissions().catch(()=>false),
+]).then(()=>{
+  // If run sheet loaded successfully, re-render cards to apply badges
+  if(runSheetItems.length&&allCards.length){
+    const subs=allCards.map(c=>c.submission);
+    renderCards(subs);
+  }
 });
 })();
 </script>
