@@ -568,7 +568,7 @@ function renderCards(submissions){const grid=$('cardsGrid');grid.innerHTML='';al
 function prependCard(submission){const grid=$('cardsGrid');const all=[submission,...allCards.map(c=>c.submission)];const wd=detectDups(all);submission.isDuplicate=wd[0].isDuplicate;const card=buildCard(submission,0);card.style.opacity='0';card.style.transform='translateY(-8px)';grid.prepend(card);const entry={el:card,submission,removed:false};allCards.unshift(entry);requestAnimationFrame(()=>{card.style.transition='opacity 0.3s ease,transform 0.3s ease';card.style.opacity='1';card.style.transform='translateY(0)';});allCards.forEach((c,i)=>{const n=c.el.querySelector('.card-num');if(n)n.textContent=`#${i+1}`;});updateStats();showState('cards');$('statsStrip').classList.add('show');$('toolbar').style.display='';applyFilters();}
 $('searchInput').addEventListener('input',e=>{searchQuery=e.target.value;applyFilters();});
 document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));activeFilter=btn.dataset.filter;btn.classList.add(activeFilter==='duplicates'?'active-warn':'active');applyFilters();}));
-async function loadSubmissions(){showState('loading');$('statsStrip').classList.remove('show');$('toolbar').style.display='none';searchQuery='';activeFilter='all';document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));document.querySelector('[data-filter="all"]').classList.add('active');$('searchInput').value='';try{const res=await fetch('/.netlify/functions/get-submissions');const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not load submissions.');renderCards(data.submissions||[]);}catch(err){showState('error');$('errorMsg').textContent=err.message||'Something went wrong.';} }}
+async function loadSubmissions(){showState('loading');$('statsStrip').classList.remove('show');$('toolbar').style.display='none';searchQuery='';activeFilter='all';document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));document.querySelector('[data-filter="all"]').classList.add('active');$('searchInput').value='';try{const res=await fetch('/.netlify/functions/get-submissions');const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not load submissions.');renderCards(data.submissions||[]);}catch(err){showState('error');$('errorMsg').textContent=err.message||'Something went wrong.';}
 $('refreshBtn').addEventListener('click',loadSubmissions);
 // Add card modal
 const backdrop=$('modalBackdrop');
@@ -706,10 +706,12 @@ function parseRunSheet(lines){
   const progStartRe=/^(\d{1,2})\s+([A-Za-z].+)$/;
 
   // Skip header/footer/stats lines
-  const skipRe=/kalasandhya|wmcg|geelong|confidential|committee|running order|printed|^programs\b|^participants\b|show duration|est\.\s*finish|https?:|^\d+h\s+\d+m|3h|onam celebrations|saturday|august|4:00 pm – est/i;
+  const skipRe=/kalasandhya|wmcg|geelong|confidential|committee|running order|printed|^programs\b|^participants\b|show duration|est\.\s*finish|https?:|^\d+h\s+\d+m|3h|4h|onam celebrations|saturday|august|4:00 pm – est/i;
 
-  // Also skip lines that are purely numeric stats (e.g. "92" "16" "3h 11m")
-  const pureStatRe=/^[\d\s hm]+$/;
+  // Also skip lines that are purely numeric stats (e.g. "92" "16" "3h 11m" "100 3h 5m")
+  const pureStatRe=/^[\d\s hm:]+$/;
+  // Skip lines where the "program name" part is just numbers/duration
+  const statNameRe=/^\d+\s+\d+h|\d+h\s+\d+m/i;
 
   const blocks=[];
   let current=null;
@@ -726,7 +728,7 @@ function parseRunSheet(lines){
       const rest=m[2].trim();
 
       // Reject if the text after the number looks like stats/header content
-      if(skipRe.test(rest)||pureStatRe.test(rest))continue;
+      if(skipRe.test(rest)||pureStatRe.test(rest)||statNameRe.test(rest))continue;
       // Reject numbers > 50 (no event has that many programs)
       if(num>50)continue;
       // Reject if the rest is very short and numeric-looking
@@ -943,12 +945,11 @@ $('slotSave').addEventListener('click',()=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('slotModalBackdrop').classList.contains('show'))closeSlotModal();});
 
-// Load run sheet from Drive immediately on page start so card badges
-// are populated even before the emcee tab is opened.
-// We load submissions first, then run sheet. After both resolve,
-// re-render cards to apply any badges.
-loadSubmissions().then(()=>{
-  loadSavedRunSheet();
+// Load run sheet first so badges are ready, then load submission cards
+loadSavedRunSheet().then(()=>{
+  loadSubmissions();
+}).catch(()=>{
+  loadSubmissions();
 });
 })();
 </script>
