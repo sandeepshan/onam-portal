@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalasandhya 2026 — Submissions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FBF3E3;
+    --cream-dim: #F2E8D4;
+    --ochre: #C9762C;
+    --ochre-deep: #A85E1F;
+    --leaf: #2F4F3A;
+    --leaf-deep: #20392A;
+    --coral: #D94A3D;
+    --ink: #1F1B16;
+    --ink-soft: #5B5246;
+    --gold: #E0A23B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Work Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; height: 6px;
+    background: repeating-linear-gradient(90deg,
+      var(--coral) 0 24px, var(--gold) 24px 48px,
+      var(--leaf) 48px 72px, var(--ochre) 72px 96px);
+    z-index: 10;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    padding: 40px 48px 32px;
+    margin-top: 6px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    border-bottom: 1px solid rgba(31,27,22,0.08);
+  }
+
+  .eyebrow {
+    font-size: 11.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(26px, 4vw, 38px);
+    line-height: 1.1;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--coral);
+    font-weight: 500;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .refresh-btn {
+    background: none;
+    border: 1.5px solid rgba(31,27,22,0.15);
+    color: var(--ink-soft);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .refresh-btn:hover { border-color: var(--ochre); color: var(--ochre-deep); }
+
+  /* ── Stats strip ── */
+  .stats-strip {
+    display: none;
+    padding: 24px 48px;
+    gap: 0;
+    border-bottom: 1px solid rgba(31,27,22,0.08);
+    background: #fff;
+  }
+  .stats-strip.show {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    flex: 1;
+    min-width: 120px;
+    padding: 4px 24px 4px 0;
+    border-right: 1px solid rgba(31,27,22,0.08);
+    margin-right: 24px;
+  }
+  .stat:last-child { border-right: none; margin-right: 0; }
+
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--leaf);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-value.warn { color: var(--coral); }
+
+  .stat-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    padding: 18px 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid rgba(31,27,22,0.06);
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+    max-width: 380px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 9px 12px 9px 38px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: #fff;
+    border: 1.5px solid rgba(31,27,22,0.12);
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: var(--ochre); }
+  .search-input::placeholder { color: rgba(31,27,22,0.3); }
+
+  .filter-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    background: none;
+    border: 1.5px solid rgba(31,27,22,0.12);
+    color: var(--ink-soft);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .filter-btn:hover { border-color: var(--ochre); color: var(--ochre-deep); }
+  .filter-btn.active {
+    background: var(--leaf);
+    border-color: var(--leaf);
+    color: #fff;
+  }
+  .filter-btn.active-warn {
+    background: var(--coral);
+    border-color: var(--coral);
+    color: #fff;
+  }
+
+  .result-label {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* ── Cards grid ── */
+  .cards-wrap {
+    padding: 32px 48px 72px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 18px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid rgba(31,27,22,0.08);
+    border-radius: 3px;
+    padding: 24px 26px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    position: relative;
+  }
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(31,27,22,0.07);
+    border-color: rgba(31,27,22,0.14);
+  }
+
+  .card.is-duplicate {
+    border-color: rgba(217,74,61,0.3);
+    border-left: 3px solid var(--coral);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .card-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    opacity: 0.5;
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .card-program {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 1.25;
+    color: var(--ink);
+    flex: 1;
+  }
+
+  .type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .type-pill.audio { background: rgba(224,162,59,0.14); color: var(--ochre-deep); }
+  .type-pill.video { background: rgba(47,79,58,0.1); color: var(--leaf-deep); }
+
+  .dup-badge {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--coral);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .card.is-duplicate .dup-badge { display: flex; }
+
+  .card-desc {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .card-desc.none {
+    color: rgba(91,82,70,0.4);
+    font-style: italic;
+  }
+
+  /* Truncation */
+  .card-desc.truncated {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .expand-btn {
+    background: none;
+    border: none;
+    color: var(--ochre);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    margin-top: -6px;
+    text-align: left;
+  }
+  .expand-btn:hover { color: var(--ochre-deep); }
+
+  .card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid rgba(31,27,22,0.06);
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .card-date {
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  /* ── States ── */
+  .state {
+    padding: 80px 48px;
+    text-align: center;
+  }
+  .state-icon { font-size: 42px; margin-bottom: 18px; }
+  .state h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .state p { font-size: 14.5px; color: var(--ink-soft); line-height: 1.6; max-width: 340px; margin: 0 auto; }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid rgba(201,118,44,0.2);
+    border-top-color: var(--ochre);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 18px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    background: #FCEAE7;
+    border: 1px solid rgba(217,74,61,0.25);
+    color: #8E2E24;
+    padding: 14px 18px;
+    border-radius: 2px;
+    font-size: 14px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .empty-cards {
+    padding: 60px 48px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 14.5px;
+  }
+
+  @media (max-width: 600px) {
+    .site-header, .stats-strip, .toolbar, .cards-wrap { padding-left: 18px; padding-right: 18px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .stat { min-width: 100px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div>
+    <div class="eyebrow">Kalasandhya 2026</div>
+    <h1>Program <em>submissions</em></h1>
+  </div>
+  <div class="header-actions">
+    <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
+  </div>
+</header>
+
+<!-- Stats strip -->
+<div class="stats-strip" id="statsStrip">
+  <div class="stat">
+    <div class="stat-value" id="statTotal">—</div>
+    <div class="stat-label">Total submissions</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="statAudio">—</div>
+    <div class="stat-label">Audio</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="statVideo">—</div>
+    <div class="stat-label">Video</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="statNoDesc">—</div>
+    <div class="stat-label">No description</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value warn" id="statDups">—</div>
+    <div class="stat-label">Possible duplicates</div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar" id="toolbar" style="display:none">
+  <div class="search-wrap">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="6.5" cy="6.5" r="4.5" stroke="#1F1B16" stroke-width="1.5"/>
+      <path d="M10 10L14 14" stroke="#1F1B16" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search by program, name, or description…">
+  </div>
+  <div class="filter-btns">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="audio">🎵 Audio</button>
+    <button class="filter-btn" data-filter="video">🎬 Video</button>
+    <button class="filter-btn" data-filter="duplicates" id="dupFilterBtn">⚠️ Duplicates</button>
+  </div>
+  <span class="result-label" id="resultLabel"></span>
+</div>
+
+<!-- Main content -->
+<div id="loadingState" class="state">
+  <div class="spinner"></div>
+  <h2>Loading submissions</h2>
+  <p>Reading from Drive…</p>
+</div>
+
+<div id="errorState" class="state" style="display:none">
+  <div class="state-icon">⚠️</div>
+  <div class="error-box" id="errorMsg"></div>
+</div>
+
+<div id="cardsState" style="display:none">
+  <div class="cards-wrap">
+    <div class="cards-grid" id="cardsGrid"></div>
+    <div class="empty-cards" id="emptyCards" style="display:none">No programs match your search.</div>
+  </div>
+</div>
+
+<div id="emptyState" class="state" style="display:none">
+  <div class="state-icon">🌺</div>
+  <h2>No submissions yet</h2>
+  <p>Once participants upload their entries, they'll appear here.</p>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+
+  const states = {
+    loading: $('loadingState'),
+    error:   $('errorState'),
+    cards:   $('cardsState'),
+    empty:   $('emptyState'),
+  };
+
+  function showState(which) {
+    Object.values(states).forEach(el => el.style.display = 'none');
+    states[which].style.display = '';
+  }
+
+  function fileType(mediaFile) {
+    if (!mediaFile) return 'unknown';
+    const ext = (mediaFile.split('.').pop() || '').toLowerCase();
+    return ['mp3','wav','aac','flac','ogg','m4a','aiff'].includes(ext) ? 'audio' : 'video';
+  }
+
+  function formatDate(submitted) {
+    if (!submitted) return '—';
+    return submitted.split(',')[0] || submitted;
+  }
+
+  function escHtml(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Detect duplicates: same program name (case-insensitive) OR same email
+  function detectDuplicates(submissions) {
+    const programCount = {};
+    const emailCount = {};
+    submissions.forEach(s => {
+      const pk = (s.program || '').toLowerCase().trim();
+      const ek = (s.email || '').toLowerCase().trim();
+      if (pk) programCount[pk] = (programCount[pk] || 0) + 1;
+      if (ek) emailCount[ek] = (emailCount[ek] || 0) + 1;
+    });
+    return submissions.map(s => {
+      const pk = (s.program || '').toLowerCase().trim();
+      const ek = (s.email || '').toLowerCase().trim();
+      const isDup = (programCount[pk] > 1) || (emailCount[ek] > 1);
+      return { ...s, isDuplicate: isDup };
+    });
+  }
+
+  let allCards = [];
+  let activeFilter = 'all';
+  let searchQuery = '';
+
+  function applyFilters() {
+    const q = searchQuery.toLowerCase();
+    let shown = 0;
+
+    allCards.forEach(({ el, submission }) => {
+      const matchSearch = !q ||
+        (submission.program || '').toLowerCase().includes(q) ||
+        (submission.name || '').toLowerCase().includes(q) ||
+        (submission.description || '').toLowerCase().includes(q);
+
+      const type = fileType(submission.mediaFile);
+      const matchFilter =
+        activeFilter === 'all' ||
+        (activeFilter === 'audio' && type === 'audio') ||
+        (activeFilter === 'video' && type === 'video') ||
+        (activeFilter === 'duplicates' && submission.isDuplicate);
+
+      const visible = matchSearch && matchFilter;
+      el.style.display = visible ? '' : 'none';
+      if (visible) shown++;
+    });
+
+    $('emptyCards').style.display = shown === 0 ? '' : 'none';
+    $('resultLabel').textContent = shown === allCards.length
+      ? `${allCards.length} submission${allCards.length !== 1 ? 's' : ''}`
+      : `${shown} of ${allCards.length} shown`;
+  }
+
+  function renderCards(submissions) {
+    const grid = $('cardsGrid');
+    grid.innerHTML = '';
+    allCards = [];
+
+    if (!submissions.length) { showState('empty'); return; }
+
+    const withDups = detectDuplicates(submissions);
+    const dupCount = withDups.filter(s => s.isDuplicate).length;
+    const audioCount = withDups.filter(s => fileType(s.mediaFile) === 'audio').length;
+    const videoCount = withDups.filter(s => fileType(s.mediaFile) === 'video').length;
+    const noDescCount = withDups.filter(s => !s.description || s.description === '(none provided)').length;
+
+    // Stats
+    $('statTotal').textContent = submissions.length;
+    $('statAudio').textContent = audioCount;
+    $('statVideo').textContent = videoCount;
+    $('statNoDesc').textContent = noDescCount;
+    $('statDups').textContent = dupCount;
+    $('statsStrip').classList.add('show');
+    $('toolbar').style.display = '';
+
+    // Update dup filter button label
+    if (dupCount > 0) {
+      $('dupFilterBtn').textContent = `⚠️ Duplicates (${dupCount})`;
+    }
+
+    withDups.forEach((s, i) => {
+      const type = fileType(s.mediaFile);
+      const hasDesc = s.description && s.description !== '(none provided)';
+      const isLong = hasDesc && s.description.length > 280;
+
+      const card = document.createElement('div');
+      card.className = 'card' + (s.isDuplicate ? ' is-duplicate' : '');
+
+      const typeLabel = type === 'audio'
+        ? `<span class="type-pill audio">🎵 Audio</span>`
+        : `<span class="type-pill video">🎬 Video</span>`;
+
+      const descHtml = hasDesc
+        ? `<div class="card-desc${isLong ? ' truncated' : ''}" id="desc-${i}">${escHtml(s.description)}</div>${isLong ? `<button class="expand-btn" data-target="desc-${i}">Show more ↓</button>` : ''}`
+        : `<div class="card-desc none">No description provided</div>`;
+
+      card.innerHTML = `
+        <div>
+          <div class="card-num">#${i + 1}</div>
+          <div class="card-top">
+            <div class="card-program">${escHtml(s.program || '—')}</div>
+            ${typeLabel}
+          </div>
+          <div class="dup-badge">⚠ Possible duplicate</div>
+        </div>
+        ${descHtml}
+        <div class="card-foot">
+          <span class="card-name">${escHtml(s.name || '—')}</span>
+          <span class="card-date">${escHtml(formatDate(s.submitted))}</span>
+        </div>
+      `;
+
+      // Expand/collapse long descriptions
+      const expandBtn = card.querySelector('.expand-btn');
+      if (expandBtn) {
+        expandBtn.addEventListener('click', () => {
+          const descEl = card.querySelector(`#desc-${i}`);
+          const expanded = !descEl.classList.contains('truncated');
+          descEl.classList.toggle('truncated', expanded);
+          expandBtn.textContent = expanded ? 'Show more ↓' : 'Show less ↑';
+        });
+      }
+
+      grid.appendChild(card);
+      allCards.push({ el: card, submission: s });
+    });
+
+    showState('cards');
+    applyFilters();
+  }
+
+  // Search
+  $('searchInput').addEventListener('input', e => {
+    searchQuery = e.target.value;
+    applyFilters();
+  });
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('active', 'active-warn');
+      });
+      activeFilter = btn.dataset.filter;
+      btn.classList.add(activeFilter === 'duplicates' ? 'active-warn' : 'active');
+      applyFilters();
+    });
+  });
+
+  async function loadSubmissions() {
+    showState('loading');
+    $('statsStrip').classList.remove('show');
+    $('toolbar').style.display = 'none';
+    searchQuery = '';
+    activeFilter = 'all';
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.remove('active', 'active-warn');
+    });
+    document.querySelector('[data-filter="all"]').classList.add('active');
+    $('searchInput').value = '';
+
+    try {
+      const res = await fetch('/.netlify/functions/get-submissions');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load submissions.');
+      renderCards(data.submissions || []);
+    } catch (err) {
+      showState('error');
+      $('errorMsg').textContent = err.message || 'Something went wrong. Please refresh and try again.';
+    }
+  }
+
+  $('refreshBtn').addEventListener('click', loadSubmissions);
+  loadSubmissions();
+})();
+</script>
+</body>
+</html>
