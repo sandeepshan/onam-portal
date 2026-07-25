@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalasandhya 2026 — Submissions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FBF3E3;
+    --cream-dim: #F2E8D4;
+    --ochre: #C9762C;
+    --ochre-deep: #A85E1F;
+    --leaf: #2F4F3A;
+    --leaf-deep: #20392A;
+    --coral: #D94A3D;
+    --ink: #1F1B16;
+    --ink-soft: #5B5246;
+    --gold: #E0A23B;
+    --white: #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Work Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Top stripe — same as upload portal */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; height: 6px;
+    background: repeating-linear-gradient(90deg,
+      var(--coral) 0 24px, var(--gold) 24px 48px,
+      var(--leaf) 48px 72px, var(--ochre) 72px 96px);
+    z-index: 10;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    padding: 40px 40px 28px;
+    border-bottom: 1px solid rgba(31,27,22,0.08);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 6px;
+  }
+
+  .header-left .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .header-left h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(24px, 4vw, 36px);
+    line-height: 1.1;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  .header-left h1 em {
+    font-style: italic;
+    color: var(--coral);
+    font-weight: 500;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .count-badge {
+    background: var(--leaf);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 2px;
+    letter-spacing: 0.02em;
+    display: none;
+  }
+  .count-badge.show { display: inline-block; }
+
+  .refresh-btn {
+    background: none;
+    border: 1.5px solid rgba(31,27,22,0.18);
+    color: var(--ink-soft);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .refresh-btn:hover { border-color: var(--ochre); color: var(--ochre-deep); }
+
+  /* ── Filter / search bar ── */
+  .toolbar {
+    padding: 18px 40px;
+    border-bottom: 1px solid rgba(31,27,22,0.06);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+    max-width: 360px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 9px 12px 9px 36px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--white);
+    border: 1.5px solid rgba(31,27,22,0.12);
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: var(--ochre); }
+  .search-input::placeholder { color: rgba(31,27,22,0.32); }
+
+  .result-count {
+    font-size: 13px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  /* ── Table ── */
+  .table-wrap {
+    padding: 0 40px 60px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 24px;
+  }
+
+  thead th {
+    text-align: left;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    padding: 0 16px 12px;
+    border-bottom: 2px solid var(--leaf);
+    white-space: nowrap;
+  }
+
+  thead th:first-child { padding-left: 0; }
+  thead th:last-child { padding-right: 0; }
+
+  /* Column widths */
+  .col-num    { width: 40px; }
+  .col-prog   { width: 220px; min-width: 160px; }
+  .col-desc   { min-width: 280px; }
+  .col-name   { width: 160px; min-width: 120px; }
+  .col-date   { width: 150px; min-width: 120px; }
+  .col-type   { width: 72px; }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(31,27,22,0.07);
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: rgba(201,118,44,0.04); }
+  tbody tr.hidden { display: none; }
+
+  tbody td {
+    padding: 16px 16px;
+    vertical-align: top;
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+  tbody td:first-child { padding-left: 0; }
+  tbody td:last-child { padding-right: 0; }
+
+  .td-num {
+    color: var(--ink-soft);
+    font-size: 12px;
+    font-weight: 600;
+    padding-top: 18px;
+  }
+
+  .prog-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 15.5px;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+
+  .td-desc {
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .td-name {
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  .td-date {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+  .type-pill.audio {
+    background: rgba(224,162,59,0.15);
+    color: var(--ochre-deep);
+  }
+  .type-pill.video {
+    background: rgba(47,79,58,0.1);
+    color: var(--leaf-deep);
+  }
+
+  /* ── States ── */
+  .state {
+    padding: 80px 40px;
+    text-align: center;
+  }
+  .state-icon { font-size: 40px; margin-bottom: 16px; }
+  .state h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .state p {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid rgba(201,118,44,0.2);
+    border-top-color: var(--ochre);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    background: #FCEAE7;
+    border: 1px solid rgba(217,74,61,0.25);
+    color: #8E2E24;
+    padding: 14px 18px;
+    border-radius: 2px;
+    font-size: 14px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  /* ── No-results row ── */
+  .no-results-row td {
+    text-align: center;
+    padding: 48px 16px;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px) {
+    .site-header, .toolbar, .table-wrap { padding-left: 18px; padding-right: 18px; }
+    .col-name, .col-date, .col-type { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-left">
+    <div class="eyebrow">Kalasandhya 2026</div>
+    <h1>Program <em>submissions</em></h1>
+  </div>
+  <div class="header-right">
+    <span class="count-badge" id="countBadge"></span>
+    <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="6.5" cy="6.5" r="4.5" stroke="#1F1B16" stroke-width="1.5"/>
+      <path d="M10 10L14 14" stroke="#1F1B16" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search by program, name, or description…">
+  </div>
+  <span class="result-count" id="resultCount"></span>
+</div>
+
+<div id="mainContent">
+  <div class="state" id="loadingState">
+    <div class="spinner"></div>
+    <h2>Loading submissions</h2>
+    <p>Reading from Drive…</p>
+  </div>
+  <div class="state" id="errorState" style="display:none">
+    <div class="state-icon">⚠️</div>
+    <div class="error-box" id="errorMsg"></div>
+  </div>
+  <div id="tableState" style="display:none">
+    <div class="table-wrap">
+      <table id="submissionsTable">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-prog">Program</th>
+            <th class="col-desc">Description</th>
+            <th class="col-name">Submitted by</th>
+            <th class="col-date">Date</th>
+            <th class="col-type">Type</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="state" id="emptyState" style="display:none">
+    <div class="state-icon">🌺</div>
+    <h2>No submissions yet</h2>
+    <p>Once participants upload their entries, they'll appear here.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const loadingState = document.getElementById('loadingState');
+  const errorState   = document.getElementById('errorState');
+  const tableState   = document.getElementById('tableState');
+  const emptyState   = document.getElementById('emptyState');
+  const errorMsg     = document.getElementById('errorMsg');
+  const tableBody    = document.getElementById('tableBody');
+  const countBadge   = document.getElementById('countBadge');
+  const resultCount  = document.getElementById('resultCount');
+  const searchInput  = document.getElementById('searchInput');
+  const refreshBtn   = document.getElementById('refreshBtn');
+
+  let allRows = [];
+
+  function showState(which) {
+    [loadingState, errorState, tableState, emptyState].forEach(el => el.style.display = 'none');
+    which.style.display = '';
+  }
+
+  function fileType(mediaFile) {
+    if (!mediaFile) return 'unknown';
+    const ext = mediaFile.split('.').pop().toLowerCase();
+    const audioExts = ['mp3','wav','aac','flac','ogg','m4a','aiff'];
+    return audioExts.includes(ext) ? 'audio' : 'video';
+  }
+
+  function formatDate(submitted) {
+    if (!submitted) return '—';
+    // Already formatted as "20/07/2026, 3:23:32 pm" — just show date part
+    return submitted.split(',')[0] || submitted;
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderTable(submissions) {
+    tableBody.innerHTML = '';
+    allRows = [];
+
+    if (submissions.length === 0) {
+      showState(emptyState);
+      countBadge.classList.remove('show');
+      resultCount.textContent = '';
+      return;
+    }
+
+    submissions.forEach((s, i) => {
+      const type = fileType(s.mediaFile);
+      const tr = document.createElement('tr');
+      tr.dataset.search = [s.program, s.name, s.description].join(' ').toLowerCase();
+
+      const typeLabel = type === 'audio'
+        ? `<span class="type-pill audio">🎵 Audio</span>`
+        : `<span class="type-pill video">🎬 Video</span>`;
+
+      tr.innerHTML = `
+        <td class="td-num">${i + 1}</td>
+        <td><div class="prog-name">${escapeHtml(s.program || '—')}</div></td>
+        <td><div class="td-desc">${escapeHtml(s.description || '—')}</div></td>
+        <td class="td-name col-name">${escapeHtml(s.name || '—')}</td>
+        <td class="td-date col-date">${escapeHtml(formatDate(s.submitted))}</td>
+        <td class="col-type">${typeLabel}</td>
+      `;
+
+      tableBody.appendChild(tr);
+      allRows.push(tr);
+    });
+
+    showState(tableState);
+    countBadge.textContent = `${submissions.length} submission${submissions.length !== 1 ? 's' : ''}`;
+    countBadge.classList.add('show');
+    updateResultCount(submissions.length, submissions.length);
+  }
+
+  function updateResultCount(shown, total) {
+    if (shown === total) {
+      resultCount.textContent = `${total} submission${total !== 1 ? 's' : ''}`;
+    } else {
+      resultCount.textContent = `${shown} of ${total} shown`;
+    }
+  }
+
+  function applySearch(query) {
+    const q = query.trim().toLowerCase();
+    let shown = 0;
+
+    // Remove any existing no-results row
+    const existing = tableBody.querySelector('.no-results-row');
+    if (existing) existing.remove();
+
+    allRows.forEach(tr => {
+      const match = !q || tr.dataset.search.includes(q);
+      tr.classList.toggle('hidden', !match);
+      if (match) shown++;
+    });
+
+    updateResultCount(shown, allRows.length);
+
+    if (shown === 0 && allRows.length > 0) {
+      const noRow = document.createElement('tr');
+      noRow.className = 'no-results-row';
+      noRow.innerHTML = `<td colspan="6">No programs match "${escapeHtml(query)}"</td>`;
+      tableBody.appendChild(noRow);
+    }
+  }
+
+  async function loadSubmissions() {
+    showState(loadingState);
+    countBadge.classList.remove('show');
+    resultCount.textContent = '';
+    searchInput.value = '';
+
+    try {
+      const res = await fetch('/.netlify/functions/get-submissions');
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Could not load submissions.');
+      }
+
+      renderTable(data.submissions || []);
+    } catch (err) {
+      showState(errorState);
+      errorMsg.textContent = err.message || 'Something went wrong. Please refresh and try again.';
+    }
+  }
+
+  searchInput.addEventListener('input', () => applySearch(searchInput.value));
+  refreshBtn.addEventListener('click', loadSubmissions);
+
+  loadSubmissions();
+})();
+</script>
+</body>
+</html>
