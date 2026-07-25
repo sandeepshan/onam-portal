@@ -415,9 +415,9 @@ h1 em{font-style:italic;color:var(--coral);font-weight:500;}
     <div class="stage-actions">
       <button class="upload-pdf-btn" id="uploadPdfBtn">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        Upload PDF
+        Upload CSV / PDF
       </button>
-      <input type="file" id="pdfFileInput" accept="application/pdf,.pdf">
+      <input type="file" id="pdfFileInput" accept=".csv,.pdf,text/csv,application/pdf">
       <button class="stage-secondary-btn" id="clearRunSheet" style="display:none">✕ Clear</button>
     </div>
   </div>
@@ -425,8 +425,8 @@ h1 em{font-style:italic;color:var(--coral);font-weight:500;}
   <!-- Drop zone (shown when no PDF loaded) -->
   <div class="pdf-dropzone" id="pdfDropzone">
     <div class="pdf-dropzone-icon">📄</div>
-    <div class="pdf-dropzone-title">Drop your program PDF here</div>
-    <div class="pdf-dropzone-sub">Or <strong>click Upload PDF</strong> above — the Kalasandhya Program Coordination export works perfectly.</div>
+    <div class="pdf-dropzone-title">Drop your running order CSV here</div>
+    <div class="pdf-dropzone-sub">Or <strong>click Upload</strong> above — export CSV from the Kalasandhya program coordination app. PDF also works.</div>
   </div>
 
   <!-- Parsing indicator -->
@@ -735,39 +735,41 @@ $('clearRunSheet').addEventListener('click',()=>{
 });
 
 async function parsePDF(file){
+  // Handles both CSV and PDF — CSV is preferred and parsed directly,
+  // PDF falls back to text extraction
   dz.style.display='none';
   $('runSheet').style.display='none';
   $('stageParsing').style.display='block';
 
   try{
-    const arrayBuffer=await file.arrayBuffer();
-    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+    const isCSV=file.name.toLowerCase().endsWith('.csv')||file.type==='text/csv'||file.type==='application/csv';
 
-    // Use pdfplumber-style extraction: collect all text items per page,
-    // group by Y position into lines, join lines with newline
-    const pageLines=[];
-    for(let p=1;p<=pdf.numPages;p++){
-      const page=await pdf.getPage(p);
-      const tc=await page.getTextContent();
-      // Group by rounded Y (pdfplumber groups within ~1pt)
-      const byY={};
-      tc.items.forEach(item=>{
-        const y=Math.round(item.transform[5]*10)/10;
-        if(!byY[y])byY[y]=[];
-        byY[y].push({x:item.transform[4],str:item.str});
-      });
-      // Sort Y descending (higher Y = top of page in PDF coords)
-      const sortedYs=Object.keys(byY).map(Number).sort((a,b)=>b-a);
-      sortedYs.forEach(y=>{
-        const lineStr=byY[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join('').trim();
-        if(lineStr)pageLines.push(lineStr);
-      });
+    let programs=[];
+    if(isCSV){
+      const text=await file.text();
+      programs=parseCSV(text);
+    } else {
+      // PDF fallback
+      const arrayBuffer=await file.arrayBuffer();
+      const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+      const pageLines=[];
+      for(let p=1;p<=pdf.numPages;p++){
+        const page=await pdf.getPage(p);
+        const tc=await page.getTextContent();
+        const byY={};
+        tc.items.forEach(item=>{
+          const y=Math.round(item.transform[5]*10)/10;
+          if(!byY[y])byY[y]=[];
+          byY[y].push({x:item.transform[4],str:item.str});
+        });
+        Object.keys(byY).map(Number).sort((a,b)=>b-a).forEach(y=>{
+          const lineStr=byY[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join('').trim();
+          if(lineStr)pageLines.push(lineStr);
+        });
+      }
+      programs=parseRunSheet(pageLines.join('\n'));
     }
 
-    const fullText=pageLines.join('\n');
-    console.log('Extracted text (first 1500 chars):\n', fullText.substring(0,1500));
-    const programs=parseRunSheet(fullText);
-    console.log('Programs parsed:', programs.length, programs.map(p=>({num:p.num,name:p.name,lead:p.lead,start:p.startTime})));
     runSheetItems=programs.map(p=>({type:'program',data:p}));
     saveRunSheet(file.name);
     renderRunSheet(file.name);
@@ -778,9 +780,111 @@ async function parsePDF(file){
   }catch(err){
     $('stageParsing').style.display='none';
     dz.style.display='';
-    console.error('PDF parse error:',err);
-    alert('Could not read the PDF. Make sure it is the Kalasandhya Program Coordination export.');
+    console.error('Parse error:',err);
+    alert('Could not read the file. Please upload the CSV export from the program coordination app.');
   }
+}
+
+function parseCSV(text){
+  // Parse the Kalasandhya running order CSV:
+  // #, Program, Category, Type, Start, End, Duration (min), Participants, Choreographer / Lead, Coordinator
+  const lines=text.split(/\r?\n/);
+  const programs=[];
+
+  // Find header row
+  let headerIdx=-1;
+  for(let i=0;i<lines.length;i++){
+    if(lines[i].toLowerCase().includes('program')&&lines[i].toLowerCase().includes('start')){
+      headerIdx=i;break;
+    }
+  }
+  if(headerIdx===-1)return programs;
+
+  // Parse header to find column indices
+  const headers=parseCSVRow(lines[headerIdx]).map(h=>h.toLowerCase().trim());
+  const col=name=>headers.findIndex(h=>h.includes(name));
+  const cNum=col('#');
+  const cName=col('program');
+  const cCategory=col('category');
+  const cStart=col('start');
+  const cEnd=col('end');
+  const cParticipants=col('participant');
+  const cLead=col('choreographer');
+
+  for(let i=headerIdx+1;i<lines.length;i++){
+    const row=parseCSVRow(lines[i]);
+    if(!row||!row[cNum]||!row[cName])continue;
+    const num=parseInt(row[cNum]);
+    if(isNaN(num)||num<1)continue;
+
+    const name=(row[cName]||'').trim();
+    const type=(row[cCategory]||'').trim();
+    const startTime=(row[cStart]||'').trim();
+    const endTime=(row[cEnd]||'').trim();
+    const leadRaw=(row[cLead]||'').trim();
+    const participantsRaw=(row[cParticipants]||'').trim();
+
+    // Parse participants — comma-separated
+    const participants=participantsRaw
+      .split(',')
+      .map(p=>p.trim())
+      .filter(p=>p.length>1&&p.toLowerCase()!==leadRaw.toLowerCase());
+
+    programs.push({num,name,type,lead:leadRaw,participants,startTime,endTime});
+  }
+  return programs;
+}
+
+function parseCSVRow(line){
+  // Handle quoted fields (e.g. "Dania Jestin, Jessica Isaac")
+  const result=[];
+  let current='';
+  let inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){inQuotes=!inQuotes;}
+    else if(ch===','&&!inQuotes){result.push(current);current='';}
+    else{current+=ch;}
+  }
+  result.push(current);
+  return result;
+}
+
+function parseRunSheet(text){
+  // PDF fallback parser (kept for compatibility)
+  const programs=[];
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const skipRe=/kalasandhya|wmcg|geelong|confidential|onam|saturday|august|running order|printed|show duration|est\.\s*finish|https?:|program & participants|^# program|^programs$|^participants$|^time$/i;
+  const progLineRe=/^(\d{1,2})\s+([A-Za-z].+?)(?:\s+(\d{1,2}:\d{2} (?:AM|PM)))?$/i;
+  const typeRe=/(Group Dance|Group Song|Thiruvathirakali|Thiruvathirakkali|Duet Song|Duet Dance|Solo)/i;
+  let i=0;
+  while(i<lines.length){
+    const line=lines[i];
+    if(!line||skipRe.test(line)){i++;continue;}
+    const progMatch=line.match(progLineRe);
+    if(progMatch){
+      const num=parseInt(progMatch[1]);
+      if(num>=1&&num<=25){
+        let name=progMatch[2].trim(),startTime=progMatch[3]||'',endTime='',type='',lead='',participants=[];
+        i++;
+        while(i<lines.length){
+          const l=lines[i];
+          if(!l){i++;continue;}
+          if(progLineRe.test(l)&&parseInt((l.match(/^(\d{1,2})/)||[])[1]||0)>=1)break;
+          if(skipRe.test(l)){i++;continue;}
+          const typeLeadM=l.match(/^(.+?)\s*[·•]\s*Lead:\s*(.+?)(?:\s*[→>]\s*(\d{1,2}:\d{2}\s*(?:AM|PM)))?$/i);
+          if(typeLeadM){if(typeRe.test(typeLeadM[1]))type=typeLeadM[1].trim();lead=typeLeadM[2].trim();if(typeLeadM[3])endTime=typeLeadM[3].trim();i++;continue;}
+          if(l.includes('·')||l.includes('•')){const parts=l.split(/[·•]/).map(p=>p.trim()).filter(p=>p.length>1&&p.length<60&&!/^\d/.test(p));participants.push(...parts);i++;continue;}
+          i++;
+        }
+        if(lead)participants=participants.filter(p=>p.toLowerCase()!==lead.toLowerCase());
+        if(name)programs.push({num,name,type,lead,participants,startTime,endTime});
+        continue;
+      }
+    }
+    i++;
+  }
+  return programs;
 }
 
 function parseRunSheet(text){
