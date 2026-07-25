@@ -657,20 +657,33 @@ async function parsePDF(file){
   try{
     const arrayBuffer=await file.arrayBuffer();
     const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
-    let fullText='';
+
+    // Extract text items with Y position so we can reconstruct real lines
+    const allLines=[];
     for(let p=1;p<=pdf.numPages;p++){
       const page=await pdf.getPage(p);
       const tc=await page.getTextContent();
-      fullText+=tc.items.map(i=>i.str).join(' ')+'\n';
+      // Group items by Y position (same line = within 3 units of each other)
+      const byY={};
+      tc.items.forEach(item=>{
+        const y=Math.round(item.transform[5]/3)*3;
+        if(!byY[y])byY[y]=[];
+        byY[y].push({x:item.transform[4],str:item.str});
+      });
+      // Sort by Y descending (top of page first), then by X within each line
+      Object.keys(byY).sort((a,b)=>b-a).forEach(y=>{
+        const lineText=byY[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ').trim();
+        if(lineText)allLines.push(lineText);
+      });
     }
-    const programs=parseRunSheet(fullText);
+
+    const programs=parseRunSheet(allLines);
     runSheetItems=programs.map(p=>({type:'program',data:p}));
     saveRunSheet(file.name);
     renderRunSheet(file.name);
     $('stageParsing').style.display='none';
     $('runSheet').style.display='block';
     $('clearRunSheet').style.display='';
-    // Re-render submission cards to show program number badges
     if(allCards.length){const subs=allCards.map(c=>c.submission);renderCards(subs);}
   }catch(err){
     $('stageParsing').style.display='none';
@@ -680,70 +693,121 @@ async function parsePDF(file){
   }
 }
 
-function parseRunSheet(text){
-  // Extract event meta
+function parseRunSheet(lines){
+  // Lines from the PDF look like (reconstructed from Y positions):
+  //   "1  Welcome speech  4:00 PM"
+  //   "2  Tatva Sparkling Stars"
+  //   "Group Dance · Lead: Payal Kumar"
+  //   "Dania Jestin · Jessica Isaac · ..."
+  //   "4:04 PM"
+  //   "→ 4:09 PM"
+  //
+  // Strategy: scan lines for a leading programme number, then accumulate
+  // subsequent lines until the next number, extracting type/lead/participants/time.
+
   const programs=[];
+  const timeRe=/^(\d{1,2}:\d{2}\s*(?:AM|PM))$/i;
+  const arrowTimeRe=/^[→>]\s*(\d{1,2}:\d{2}\s*(?:AM|PM))$/i;
+  const inlineTimeRe=/(\d{1,2}:\d{2}\s*(?:AM|PM))/i;
+  // A line starting a new program: number then space then text
+  const progStartRe=/^(\d{1,2})\s+(.+)$/;
+  // Skip pure header/footer lines
+  const skipRe=/kalasandhya|wmcg|geelong|confidential|committee|running order|printed|programs\s+\d|participants\s+\d|show duration|est\.\s*finish|https?:/i;
 
-  // Match patterns like:
-  // "1 Welcome speech 4:00 PM"
-  // "2 Tatva Sparkling Stars Group Dance · Lead: Payal Kumar ... 4:04 PM → 4:09 PM"
-  // Numbers followed by program name and time
-  const lines=text.split(/\n/);
-  const cleanLines=lines.map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
-  const joined=cleanLines.join(' ');
+  // First pass: bucket lines into program blocks
+  const blocks=[]; // [{num, lines:[]}]
+  let current=null;
 
-  // Use regex to find numbered entries
-  // Pattern: number, then text until we hit a time HH:MM PM/AM
-  const entryRe=/(\d+)\s+([A-Za-z].+?)(\d{1,2}:\d{2}\s*(?:AM|PM))(?:\s*[→>]\s*(\d{1,2}:\d{2}\s*(?:AM|PM)))?/g;
-  let match;
-  const rawEntries=[];
-  while((match=entryRe.exec(joined))!==null){
-    rawEntries.push({
-      num:parseInt(match[1]),
-      raw:match[2].trim(),
-      startTime:match[3].trim(),
-      endTime:match[4]?match[4].trim():null
-    });
+  for(const raw of lines){
+    const line=raw.trim();
+    if(!line||skipRe.test(line))continue;
+
+    const m=line.match(progStartRe);
+    if(m){
+      const num=parseInt(m[1]);
+      // Only accept numbers 1-99 that look like program numbers
+      if(num>=1&&num<=99){
+        if(current)blocks.push(current);
+        current={num,lines:[m[2].trim()]};
+        continue;
+      }
+    }
+    if(current)current.lines.push(line);
   }
+  if(current)blocks.push(current);
 
-  // Dedupe: keep first occurrence of each number
+  // Dedupe blocks by number — keep first occurrence
   const seen=new Set();
-  const entries=rawEntries.filter(e=>{if(seen.has(e.num))return false;seen.add(e.num);return true;});
+  const uniqueBlocks=blocks.filter(b=>{if(seen.has(b.num))return false;seen.add(b.num);return true;});
 
-  entries.forEach(e=>{
-    // Parse type and lead from raw text
-    // Pattern: "Program Name Group Dance · Lead: Someone Participants..."
-    let name=e.raw,type='',lead='',participants=[];
-    const typeMatch=e.raw.match(/^(.*?)\s+(Group Dance|Group Song|Thiruvathirakali|Duet Song|Duet Dance|Solo|Group)\s*[·•]\s*Lead:\s*([^\·•]+)/i);
-    if(typeMatch){
-      name=typeMatch[1].trim();
-      type=typeMatch[2].trim();
-      const afterLead=typeMatch[3];
-      // Participants come after the lead name — they look like "Name · Name · Name"
-      const leadParts=afterLead.split(/[·•]/);
-      lead=leadParts[0].trim();
-      // Clean up lead — sometimes the regex captures extra text before the first separator
-      // Lead names are typically 2-3 words max
-      const leadWords=lead.split(/\s+/);
-      if(leadWords.length>4)lead=leadWords.slice(0,3).join(' ');
-      // Remaining participants come from everything after the lead in the raw match
-      const afterLeadFull=e.raw.slice(e.raw.indexOf(afterLead)+afterLead.length);
-      participants=[...leadParts.slice(1),...afterLeadFull.split(/[·•]/)].map(p=>p.trim()).filter(p=>p.length>1&&p.length<50&&!/\d{1,2}:\d{2}/.test(p)&&p!==lead);
+  for(const block of uniqueBlocks){
+    let name='',type='',lead='',participants=[],startTime='',endTime='';
+    const typeRe=/(Group Dance|Group Song|Thiruvathirakali|Thiruvathirakkali|Duet Song|Duet Dance|Solo Dance|Solo Song|Solo)/i;
+    const leadRe=/Lead:\s*(.+)/i;
+
+    const bodyLines=block.lines;
+
+    // First line of the block is always the program name (possibly with inline type)
+    let nameLine=bodyLines[0]||'';
+    // Strip any trailing time from the name line
+    nameLine=nameLine.replace(/\s+\d{1,2}:\d{2}\s*(?:AM|PM).*/i,'').trim();
+    // Strip type from name line if it's embedded
+    const typeInName=nameLine.match(typeRe);
+    if(typeInName){
+      name=nameLine.slice(0,typeInName.index).trim();
+      type=typeInName[0];
     } else {
-      // No type/lead — might be a standalone item like "Welcome speech", "Maveli/Chendamelam"
-      name=e.raw.replace(/\d{1,2}:\d{2}\s*(?:AM|PM).*/,'').trim();
+      name=nameLine;
     }
 
-    programs.push({
-      num:e.num,
-      name,
-      type,
-      lead,
-      participants,
-      startTime:e.startTime,
-      endTime:e.endTime,
-    });
-  });
+    // Scan remaining lines for type, lead, participants, times
+    for(let i=1;i<bodyLines.length;i++){
+      const l=bodyLines[i].trim();
+      if(!l)continue;
+
+      // Time lines
+      if(timeRe.test(l)){if(!startTime)startTime=l.trim();continue;}
+      const arrowM=l.match(arrowTimeRe);
+      if(arrowM){endTime=arrowM[1].trim();continue;}
+
+      // Type + lead on same line: "Group Dance · Lead: Payal Kumar"
+      const typeLeadM=l.match(/(.+?)\s*[·•]\s*Lead:\s*(.+)/i);
+      if(typeLeadM){
+        if(!type)type=typeLeadM[1].trim();
+        lead=typeLeadM[2].trim();
+        // Lead is exactly what's here — no bleed since it's its own line now
+        continue;
+      }
+
+      // Lead-only line: "Lead: Payal Kumar"
+      const leadOnlyM=l.match(leadRe);
+      if(leadOnlyM){lead=leadOnlyM[1].trim();continue;}
+
+      // Type-only line
+      if(typeRe.test(l)&&!type){type=l;continue;}
+
+      // Participant line — contains · separators or is a name-looking line after lead is set
+      if(l.includes('·')||l.includes('•')){
+        const parts=l.split(/[·•]/).map(p=>p.trim()).filter(p=>p.length>1&&p.length<60&&!/\d{1,2}:\d{2}/.test(p));
+        participants.push(...parts);
+        continue;
+      }
+
+      // Inline time on a non-time line — extract it
+      const inlineT=l.match(inlineTimeRe);
+      if(inlineT&&!startTime){startTime=inlineT[1].trim();}
+    }
+
+    // Clean up: remove lead from participants if it snuck in
+    if(lead){
+      participants=participants.filter(p=>p.toLowerCase().trim()!==lead.toLowerCase().trim());
+    }
+
+    // Only add if we got a real program name (not empty, not just punctuation)
+    if(name&&name.length>1){
+      programs.push({num:block.num,name,type,lead,participants,startTime,endTime});
+    }
+  }
 
   return programs;
 }
