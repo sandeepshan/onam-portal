@@ -742,22 +742,32 @@ async function parsePDF(file){
   try{
     const arrayBuffer=await file.arrayBuffer();
     const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
-    let fullText='';
+
+    // Use pdfplumber-style extraction: collect all text items per page,
+    // group by Y position into lines, join lines with newline
+    const pageLines=[];
     for(let p=1;p<=pdf.numPages;p++){
       const page=await pdf.getPage(p);
       const tc=await page.getTextContent();
-      // Join items with newline when X resets (new line), space otherwise
-      let lastX=null;
-      for(const item of tc.items){
-        const x=item.transform[4];
-        if(lastX!==null&&x<lastX-10){fullText+='\n';}
-        else if(lastX!==null){fullText+=' ';}
-        fullText+=item.str;
-        lastX=x+item.width;
-      }
-      fullText+='\n';
+      // Group by rounded Y (pdfplumber groups within ~1pt)
+      const byY={};
+      tc.items.forEach(item=>{
+        const y=Math.round(item.transform[5]*10)/10;
+        if(!byY[y])byY[y]=[];
+        byY[y].push({x:item.transform[4],str:item.str});
+      });
+      // Sort Y descending (higher Y = top of page in PDF coords)
+      const sortedYs=Object.keys(byY).map(Number).sort((a,b)=>b-a);
+      sortedYs.forEach(y=>{
+        const lineStr=byY[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join('').trim();
+        if(lineStr)pageLines.push(lineStr);
+      });
     }
+
+    const fullText=pageLines.join('\n');
+    console.log('Extracted text (first 1500 chars):\n', fullText.substring(0,1500));
     const programs=parseRunSheet(fullText);
+    console.log('Programs parsed:', programs.length, programs.map(p=>({num:p.num,name:p.name,lead:p.lead,start:p.startTime})));
     runSheetItems=programs.map(p=>({type:'program',data:p}));
     saveRunSheet(file.name);
     renderRunSheet(file.name);
@@ -774,77 +784,67 @@ async function parsePDF(file){
 }
 
 function parseRunSheet(text){
+  // Expected format from pdfplumber extract_text():
+  // "2 Tatva Sparkling Stars 4:04 PM"     ← num + name + start time on one line
+  // "Group Dance · Lead: Payal Kumar → 4:09 PM"  ← type + lead + end time
+  // "Dania Jestin · Jessica Isaac · ..."   ← participants
+  // "3 Dazzling Divas Junior 4:11 PM"     ← next program
+
   const programs=[];
-  // Split into lines, clean up
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
 
-  const timeRe=/^(\d{1,2}:\d{2} (?:AM|PM))$/i;
-  const arrowRe=/^[→>]\s*(\d{1,2}:\d{2} (?:AM|PM))$/i;
+  const skipRe=/kalasandhya|wmcg|geelong|confidential|onam|saturday|august|running order|printed|show duration|est\.\s*finish|https?:|program & participants|^# program|^programs$|^participants$|^time$/i;
+  const pureNumRe=/^\d+$/;
+  const statLineRe=/^(PROGRAMS|PARTICIPANTS|SHOW|DURATION|EST\.|FINISH)/;
+  const timeRe=/(\d{1,2}:\d{2} (?:AM|PM))/gi;
+  const arrowTimeRe=/[→>]\s*(\d{1,2}:\d{2} (?:AM|PM))/i;
   const typeRe=/(Group Dance|Group Song|Thiruvathirakali|Thiruvathirakkali|Duet Song|Duet Dance|Solo Dance|Solo Song|Solo)/i;
-  const leadRe=/^(.+?)\s*[·•]\s*Lead:\s*(.+)$/i;
-  const participantRe=/^[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*(?:\s*[·•]\s*[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*)+$/;
-  // Program start: a line that is just a number 1-25
-  const numRe=/^(\d{1,2})$/;
-  // Skip header/footer
-  const skipRe=/kalasandhya|wmcg|geelong|confidential|onam|saturday|august|running order|printed|show duration|est\.\s*finish|https?:|program & participants|^#\s*program/i;
+  const leadRe=/Lead:\s*([^→\d]+?)(?:\s*[→>]|$)/i;
+  // Program line: starts with 1-2 digit number then space then text then optional time
+  const progLineRe=/^(\d{1,2})\s+([A-Za-z].+?)(?:\s+(\d{1,2}:\d{2} (?:AM|PM)))?$/i;
 
   let i=0;
   while(i<lines.length){
     const line=lines[i];
 
-    // Skip header/footer lines
-    if(skipRe.test(line)){i++;continue;}
+    if(!line||skipRe.test(line)||pureNumRe.test(line)||statLineRe.test(line)){i++;continue;}
 
-    // Look for a program number on its own line
-    const numMatch=line.match(numRe);
-    if(numMatch){
-      const num=parseInt(numMatch[1]);
+    const progMatch=line.match(progLineRe);
+    if(progMatch){
+      const num=parseInt(progMatch[1]);
       if(num>=1&&num<=25){
-        // Next line should be the program name
-        i++;
-        if(i>=lines.length)break;
-        let name=lines[i];
-        // Strip any time that got appended
-        name=name.replace(/\s+\d{1,2}:\d{2}\s*(?:AM|PM).*/i,'').trim();
+        let name=progMatch[2].trim();
+        let startTime=progMatch[3]||'';
+        let endTime='',type='',lead='',participants=[];
         i++;
 
-        let type='',lead='',participants=[],startTime='',endTime='';
-
-        // Collect subsequent lines until next number or end
+        // Process subsequent lines until next program
         while(i<lines.length){
           const l=lines[i];
-          // Stop if we hit the next program number
-          if(numRe.test(l)&&parseInt(l)>=1&&parseInt(l)<=25)break;
-          // Skip header/footer
+          if(!l){i++;continue;}
+          // Stop at next program line
+          if(progLineRe.test(l)&&parseInt(l.match(/^(\d{1,2})/)?.[1]||0)>=1){break;}
           if(skipRe.test(l)){i++;continue;}
 
-          // Time lines
-          const tMatch=l.match(timeRe);
-          if(tMatch){if(!startTime)startTime=tMatch[1];i++;continue;}
-          const aMatch=l.match(arrowRe);
-          if(aMatch){endTime=aMatch[1];i++;continue;}
-
-          // Type + Lead: "Group Dance · Lead: Payal Kumar"
-          const lMatch=l.match(leadRe);
-          if(lMatch){
-            const possibleType=lMatch[1].trim();
+          // Type + Lead + optional end time: "Group Dance · Lead: Payal Kumar → 4:09 PM"
+          const typeLeadM=l.match(/^(.+?)\s*[·•]\s*Lead:\s*(.+?)(?:\s*[→>]\s*(\d{1,2}:\d{2}\s*(?:AM|PM)))?$/i);
+          if(typeLeadM){
+            const possibleType=typeLeadM[1].trim();
             if(typeRe.test(possibleType))type=possibleType;
-            lead=lMatch[2].trim();
+            lead=typeLeadM[2].trim();
+            if(typeLeadM[3])endTime=typeLeadM[3].trim();
             i++;continue;
           }
 
-          // Type only
-          if(typeRe.test(l)&&!type){type=l;i++;continue;}
-
-          // Participant line — contains · or looks like names
+          // Participant line with · separators
           if(l.includes('·')||l.includes('•')){
             const parts=l.split(/[·•]/).map(p=>p.trim()).filter(p=>p.length>1&&p.length<60&&!/^\d/.test(p));
             participants.push(...parts);
             i++;continue;
           }
 
-          // Standalone name line after lead is known (continuation of participants)
-          if(lead&&/^[A-Z]/.test(l)&&l.length<60&&!timeRe.test(l)&&!arrowRe.test(l)){
+          // Standalone name continuation (e.g. "Emmanuel" on its own after wrap)
+          if(lead&&/^[A-Z][a-z]/.test(l)&&l.length<40&&!typeRe.test(l)){
             participants.push(l);
             i++;continue;
           }
