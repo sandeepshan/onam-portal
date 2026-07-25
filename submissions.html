@@ -1036,7 +1036,7 @@ function renderRunSheet(filename){
           <div class="prog-name">${esc(p.name)}</div>
           ${p.type||p.lead?`<div class="prog-type-lead">
             ${p.type?`<span class="prog-type-tag ${tagCls}">${tagLabel}</span>`:''}
-            ${p.lead?`<span class="prog-lead">🎬 ${esc(p.lead)}</span><span style="font-size:10px;color:var(--stage-soft);margin-left:2px;opacity:0.7;">Choreographer</span>`:''}
+            ${p.lead?`<span class="prog-lead">🎬 ${esc(p.lead)}</span><span style="font-size:10px;color:var(--stage-soft);margin-left:2px;opacity:0.7;">${/dance|thiruvathir/i.test(p.type)?'Choreographer':'Lead'}</span>`:''}
           </div>`:''}
           ${p.participants.length?`<div style="margin-top:2px;margin-bottom:2px;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--stage-soft);opacity:0.6;">Participants</div><div class="prog-participants">${p.participants.map(pp=>`<span class="participant-chip">${esc(pp)}</span>`).join('')}</div>`:''}
         </div>`;
