@@ -540,8 +540,14 @@ function buildCard(s,index){
   // Match against run sheet — find program number and time slot
   let runSheetBadge='';
   if(runSheetItems.length){
-    const progName=(s.program||'').toLowerCase().trim();
-    const match=runSheetItems.find(i=>i.type==='program'&&(i.data.name||'').toLowerCase().trim()===progName);
+    const normalize=str=>(str||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();
+    const progNorm=normalize(s.program);
+    const match=runSheetItems.find(i=>{
+      if(i.type!=='program')return false;
+      const rsNorm=normalize(i.data.name);
+      // Full match or one contains the other (handles minor truncation differences)
+      return rsNorm===progNorm||rsNorm.includes(progNorm)||progNorm.includes(rsNorm);
+    });
     if(match){
       const d=match.data;
       const slotInfo=d.startTime?` · ${d.startTime}${d.endTime?' → '+d.endTime:''}` :'';
@@ -716,9 +722,13 @@ function parseRunSheet(text){
       // Participants come after the lead name — they look like "Name · Name · Name"
       const leadParts=afterLead.split(/[·•]/);
       lead=leadParts[0].trim();
-      // Remaining are participants
-      const remaining=e.raw.slice(e.raw.indexOf(typeMatch[3])+typeMatch[3].length);
-      participants=remaining.split(/[·•]/).map(p=>p.trim()).filter(p=>p.length>1&&p.length<50&&!/\d{1,2}:\d{2}/.test(p));
+      // Clean up lead — sometimes the regex captures extra text before the first separator
+      // Lead names are typically 2-3 words max
+      const leadWords=lead.split(/\s+/);
+      if(leadWords.length>4)lead=leadWords.slice(0,3).join(' ');
+      // Remaining participants come from everything after the lead in the raw match
+      const afterLeadFull=e.raw.slice(e.raw.indexOf(afterLead)+afterLead.length);
+      participants=[...leadParts.slice(1),...afterLeadFull.split(/[·•]/)].map(p=>p.trim()).filter(p=>p.length>1&&p.length<50&&!/\d{1,2}:\d{2}/.test(p)&&p!==lead);
     } else {
       // No type/lead — might be a standalone item like "Welcome speech", "Maveli/Chendamelam"
       name=e.raw.replace(/\d{1,2}:\d{2}\s*(?:AM|PM).*/,'').trim();
