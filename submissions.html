@@ -556,9 +556,10 @@ function buildCard(s,index){
   }
 
   const descHtml=hasDesc?`<div class="card-desc${isLong?' truncated':''}" id="${did}">${esc(s.description)}</div>${isLong?`<button class="expand-btn">Show more ↓</button>`:''}`:`<div class="card-desc none">No description provided</div>`;
-  card.innerHTML=`<div><div class="card-num">#${index+1}</div><div class="card-top"><div class="card-program">${esc(s.program||'—')}</div><div style="display:flex;align-items:flex-start;gap:8px;flex-shrink:0;"><button class="card-delete-btn" title="Remove this entry" style="background:none;border:1.5px solid rgba(217,74,61,0.25);color:var(--coral);font-size:12px;font-weight:600;padding:3px 8px;border-radius:2px;cursor:pointer;white-space:nowrap;transition:background 0.12s,border-color 0.12s;flex-shrink:0;margin-top:1px;" onmouseover="this.style.background='rgba(217,74,61,0.08)';this.style.borderColor='var(--coral)'" onmouseout="this.style.background='none';this.style.borderColor='rgba(217,74,61,0.25)'">✕ Remove</button></div></div>${runSheetBadge}</div><div class="card-banner dup"><span class="banner-label dup">⚠ Possible duplicate</span></div><div class="card-banner manual-tag"><span class="banner-label manual">✏ Added manually</span></div>${descHtml}<div class="card-foot"><span class="card-name">${esc(s.name||'—')}</span><span class="card-date">${esc(fmtDate(s.submitted))}</span></div><div class="confirm-overlay"><div class="confirm-title">Remove this entry?</div><div class="confirm-sub">Deletes the record from Drive.<br>Media file won't be affected.</div><div class="confirm-actions"><button class="confirm-yes">Yes, remove it</button><button class="confirm-no">Cancel</button></div></div>`;
+  card.innerHTML=`<div><div class="card-num">#${index+1}</div><div class="card-top"><div class="card-program">${esc(s.program||'—')}</div><div style="display:flex;align-items:flex-start;gap:6px;flex-shrink:0;"><button class="card-edit-btn" title="Edit this entry" style="background:none;border:1.5px solid rgba(47,79,58,0.25);color:var(--leaf);font-size:12px;font-weight:600;padding:3px 8px;border-radius:2px;cursor:pointer;white-space:nowrap;transition:background 0.12s,border-color 0.12s;flex-shrink:0;margin-top:1px;" onmouseover="this.style.background='rgba(47,79,58,0.08)';this.style.borderColor='var(--leaf)'" onmouseout="this.style.background='none';this.style.borderColor='rgba(47,79,58,0.25)'">✏️</button><button class="card-delete-btn" title="Remove this entry" style="background:none;border:1.5px solid rgba(217,74,61,0.25);color:var(--coral);font-size:12px;font-weight:600;padding:3px 8px;border-radius:2px;cursor:pointer;white-space:nowrap;transition:background 0.12s,border-color 0.12s;flex-shrink:0;margin-top:1px;" onmouseover="this.style.background='rgba(217,74,61,0.08)';this.style.borderColor='var(--coral)'" onmouseout="this.style.background='none';this.style.borderColor='rgba(217,74,61,0.25)'">✕</button></div></div>${runSheetBadge}</div><div class="card-banner dup"><span class="banner-label dup">⚠ Possible duplicate</span></div><div class="card-banner manual-tag"><span class="banner-label manual">✏ Added manually</span></div>${descHtml}<div class="card-foot"><span class="card-name">${esc(s.name||'—')}</span><span class="card-date">${esc(fmtDate(s.submitted))}</span></div><div class="confirm-overlay"><div class="confirm-title">Remove this entry?</div><div class="confirm-sub">Deletes the record from Drive.<br>Media file won't be affected.</div><div class="confirm-actions"><button class="confirm-yes">Yes, remove it</button><button class="confirm-no">Cancel</button></div></div>`;
   const eb=card.querySelector('.expand-btn');if(eb)eb.addEventListener('click',()=>{const de=card.querySelector(`#${did}`);const t=de.classList.contains('truncated');de.classList.toggle('truncated',!t);eb.textContent=t?'Show less ↑':'Show more ↓';});
   const ov=card.querySelector('.confirm-overlay');
+  card.querySelector('.card-edit-btn').addEventListener('click',()=>openEditModal(s,card,allCards.find(c=>c.el===card)));
   card.querySelector('.card-delete-btn').addEventListener('click',()=>ov.classList.add('show'));
   card.querySelector('.confirm-no').addEventListener('click',()=>ov.classList.remove('show'));
   card.querySelector('.confirm-yes').addEventListener('click',async function(){if(!s._fileId){ov.classList.remove('show');return;}this.disabled=true;this.textContent='Removing…';const ce=allCards.find(c=>c.el===card);const err=await deleteSubmission(s._fileId,ce);if(err){this.disabled=false;this.textContent='Yes, remove it';ov.classList.remove('show');}});
@@ -587,17 +588,81 @@ async function loadSubmissions(){
   }
 }
 $('refreshBtn').addEventListener('click',loadSubmissions);
-// Add card modal
+// Add / Edit card modal
 const backdrop=$('modalBackdrop');
 const mName=$('m-name'),mEmail=$('m-email'),mProgram=$('m-program'),mDesc=$('m-desc'),mType=$('m-type'),mError=$('modalError'),mSave=$('modalSave');
-function openModal(){mName.value='';mEmail.value='';mProgram.value='';mDesc.value='';mType.value='manual';mError.classList.remove('show');mError.textContent='';mSave.disabled=false;mSave.textContent='Save program';backdrop.classList.add('show');setTimeout(()=>mName.focus(),50);}
-function closeModal(){backdrop.classList.remove('show');}
+let editingCard=null; // {submission, cardEntry} when editing, null when adding
+
+function openModal(){
+  editingCard=null;
+  mName.value='';mEmail.value='';mProgram.value='';mDesc.value='';
+  mError.classList.remove('show');mError.textContent='';
+  mSave.disabled=false;mSave.textContent='Save program';
+  document.querySelector('.modal-title').innerHTML='Add a <em>program</em>';
+  backdrop.classList.add('show');setTimeout(()=>mName.focus(),50);
+}
+
+function openEditModal(s, card, cardEntry){
+  editingCard={submission:s, cardEntry, card};
+  mName.value=s.name||'';
+  mEmail.value=(s.email&&s.email!=='(not provided)')?s.email:'';
+  mProgram.value=s.program||'';
+  mDesc.value=(s.description&&s.description!=='(none provided)')?s.description:'';
+  mError.classList.remove('show');mError.textContent='';
+  mSave.disabled=false;mSave.textContent='Save changes';
+  document.querySelector('.modal-title').innerHTML='Edit <em>program</em>';
+  backdrop.classList.add('show');setTimeout(()=>mName.focus(),50);
+}
+
+function closeModal(){backdrop.classList.remove('show');editingCard=null;}
 $('addCardBtn').addEventListener('click',openModal);
 $('modalClose').addEventListener('click',closeModal);
 $('modalCancel').addEventListener('click',closeModal);
 backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeModal();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&backdrop.classList.contains('show'))closeModal();});
-mSave.addEventListener('click',async()=>{mError.classList.remove('show');const name=mName.value.trim(),email=mEmail.value.trim(),program=mProgram.value.trim(),desc=mDesc.value.trim(),mtype=mType.value;if(!name){mError.textContent='Performer name is required.';mError.classList.add('show');mName.focus();return;}if(!program){mError.textContent='Program name is required.';mError.classList.add('show');mProgram.focus();return;}if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){mError.textContent='Enter a valid email or leave it blank.';mError.classList.add('show');mEmail.focus();return;}mSave.disabled=true;mSave.textContent='Saving…';try{const res=await fetch('/.netlify/functions/add-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,program,description:desc,mediaType:mtype})});const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not save.');closeModal();prependCard(data.submission);}catch(err){mError.textContent=err.message||'Something went wrong.';mError.classList.add('show');mSave.disabled=false;mSave.textContent='Save program';}});
+mSave.addEventListener('click',async()=>{
+  mError.classList.remove('show');
+  const name=mName.value.trim(),email=mEmail.value.trim(),program=mProgram.value.trim(),desc=mDesc.value.trim();
+  if(!name){mError.textContent='Performer name is required.';mError.classList.add('show');mName.focus();return;}
+  if(!program){mError.textContent='Program name is required.';mError.classList.add('show');mProgram.focus();return;}
+  if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){mError.textContent='Enter a valid email or leave it blank.';mError.classList.add('show');mEmail.focus();return;}
+  mSave.disabled=true;
+
+  if(editingCard){
+    // EDIT mode
+    mSave.textContent='Saving…';
+    const {submission,cardEntry,card}=editingCard;
+    if(!submission._fileId){closeModal();return;}
+    try{
+      const res=await fetch('/.netlify/functions/update-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fileId:submission._fileId,name,email,program,description:desc})});
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok||!data.ok)throw new Error(data.error||'Could not save.');
+      // Update the submission object in place
+      submission.name=name;submission.email=email;submission.program=program;submission.description=desc;
+      // Re-render just this card by rebuilding it
+      const idx=allCards.indexOf(cardEntry);
+      const newCard=buildCard(submission,idx>=0?idx:0);
+      card.replaceWith(newCard);
+      if(cardEntry)cardEntry.el=newCard;
+      closeModal();
+    }catch(err){
+      mError.textContent=err.message||'Something went wrong.';mError.classList.add('show');
+      mSave.disabled=false;mSave.textContent='Save changes';
+    }
+  } else {
+    // ADD mode
+    mSave.textContent='Saving…';
+    try{
+      const res=await fetch('/.netlify/functions/add-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,program,description:desc,mediaType:'manual'})});
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok||!data.ok)throw new Error(data.error||'Could not save.');
+      closeModal();prependCard(data.submission);
+    }catch(err){
+      mError.textContent=err.message||'Something went wrong.';mError.classList.add('show');
+      mSave.disabled=false;mSave.textContent='Save program';
+    }
+  }
+});
 
 // ════════════════════════════
 // STAGE / EMCEE TAB
@@ -677,64 +742,22 @@ async function parsePDF(file){
   try{
     const arrayBuffer=await file.arrayBuffer();
     const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
-
-    // The PDF has a two-column layout:
-    // LEFT column (x < ~300): program number, name, type/lead, participants
-    // RIGHT column (x > ~300): start time, end time (→ HH:MM PM)
-    // We collect all items per page, split by X position, then reconstruct
-    // left-column lines by Y and right-column times by Y.
-
-    const pageItems=[]; // [{y, x, str, pageNum}]
+    let fullText='';
     for(let p=1;p<=pdf.numPages;p++){
       const page=await pdf.getPage(p);
-      const vp=page.getViewport({scale:1});
       const tc=await page.getTextContent();
-      // Normalise Y to page-top-relative (flip Y axis)
-      tc.items.forEach(item=>{
+      // Join items with newline when X resets (new line), space otherwise
+      let lastX=null;
+      for(const item of tc.items){
         const x=item.transform[4];
-        const y=vp.height-item.transform[5]; // top-relative
-        const str=item.str.trim();
-        if(str)pageItems.push({y,x,str,p});
-      });
+        if(lastX!==null&&x<lastX-10){fullText+='\n';}
+        else if(lastX!==null){fullText+=' ';}
+        fullText+=item.str;
+        lastX=x+item.width;
+      }
+      fullText+='\n';
     }
-
-    // Split into left (<55% of max X) and right columns
-    const maxX=Math.max(...pageItems.map(i=>i.x));
-    const splitX=maxX*0.55;
-    const leftItems=pageItems.filter(i=>i.x<splitX);
-    const rightItems=pageItems.filter(i=>i.x>=splitX);
-
-    // Group left items into lines by Y (within 4 units = same line)
-    function groupByY(items){
-      const rows={};
-      items.forEach(item=>{
-        const yKey=Math.round(item.y/4)*4;
-        if(!rows[yKey])rows[yKey]=[];
-        rows[yKey].push(item);
-      });
-      return Object.keys(rows)
-        .sort((a,b)=>Number(a)-Number(b))
-        .map(y=>rows[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ').trim())
-        .filter(Boolean);
-    }
-
-    // Build a Y→time map from right column for time matching
-    const rightRows={};
-    rightItems.forEach(item=>{
-      const yKey=Math.round(item.y/4)*4;
-      if(!rightRows[yKey])rightRows[yKey]=[];
-      rightRows[yKey].push(item);
-    });
-    // Collect all time strings from right column with their Y positions
-    const timeByY={};
-    Object.keys(rightRows).forEach(y=>{
-      const text=rightRows[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ').trim();
-      const tMatch=text.match(/(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
-      if(tMatch)timeByY[y]=tMatch[1].trim();
-    });
-
-    const leftLines=groupByY(leftItems);
-    const programs=parseRunSheet(leftLines,timeByY);
+    const programs=parseRunSheet(fullText);
     runSheetItems=programs.map(p=>({type:'program',data:p}));
     saveRunSheet(file.name);
     renderRunSheet(file.name);
@@ -750,127 +773,94 @@ async function parsePDF(file){
   }
 }
 
-function parseRunSheet(lines, timeByY){
-  // timeByY is optional — a map of Y-position → time string from the right column
-  // lines are purely from the left column so no time bleed
+function parseRunSheet(text){
   const programs=[];
-  const progStartRe=/^(\d{1,2})\s+([A-Za-z].+)$/;
-  const skipRe=/kalasandhya|wmcg|geelong|confidential|committee|running order|printed|show duration|est\.\s*finish|https?:|onam celebrations|saturday|august/i;
-  const pureStatRe=/^[\d\s hm]+$/;
-  const durationRe=/^\d+h\s+\d+m$/i;
+  // Split into lines, clean up
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  const timeRe=/^(\d{1,2}:\d{2} (?:AM|PM))$/i;
+  const arrowRe=/^[→>]\s*(\d{1,2}:\d{2} (?:AM|PM))$/i;
   const typeRe=/(Group Dance|Group Song|Thiruvathirakali|Thiruvathirakkali|Duet Song|Duet Dance|Solo Dance|Solo Song|Solo)/i;
-  const leadRe=/Lead:\s*(.+)/i;
-  const timeInlineRe=/\d{1,2}:\d{2}\s*(?:AM|PM)/i;
+  const leadRe=/^(.+?)\s*[·•]\s*Lead:\s*(.+)$/i;
+  const participantRe=/^[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*(?:\s*[·•]\s*[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*)+$/;
+  // Program start: a line that is just a number 1-25
+  const numRe=/^(\d{1,2})$/;
+  // Skip header/footer
+  const skipRe=/kalasandhya|wmcg|geelong|confidential|onam|saturday|august|running order|printed|show duration|est\.\s*finish|https?:|program & participants|^#\s*program/i;
 
-  const blocks=[];
-  let current=null;
+  let i=0;
+  while(i<lines.length){
+    const line=lines[i];
 
-  for(const raw of lines){
-    const line=raw.trim();
-    if(!line)continue;
-    if(skipRe.test(line))continue;
-    if(pureStatRe.test(line))continue;
-    if(durationRe.test(line))continue;
-    // Skip pure time lines that leaked into left column
-    if(/^\d{1,2}:\d{2}\s*(?:AM|PM)$/i.test(line))continue;
-    if(/^[→>]\s*\d{1,2}:\d{2}/i.test(line))continue;
+    // Skip header/footer lines
+    if(skipRe.test(line)){i++;continue;}
 
-    const m=line.match(progStartRe);
-    if(m){
-      const num=parseInt(m[1]);
-      const rest=m[2].trim();
-      if(num>50||num<1)continue;
-      if(skipRe.test(rest)||pureStatRe.test(rest)||durationRe.test(rest))continue;
-      if(rest.length<3)continue;
-      // Reject if rest looks like a stat (e.g. "3h 11m EST...")
-      if(/^\d+h/i.test(rest))continue;
-      if(current)blocks.push(current);
-      current={num,lines:[rest]};
-      continue;
+    // Look for a program number on its own line
+    const numMatch=line.match(numRe);
+    if(numMatch){
+      const num=parseInt(numMatch[1]);
+      if(num>=1&&num<=25){
+        // Next line should be the program name
+        i++;
+        if(i>=lines.length)break;
+        let name=lines[i];
+        // Strip any time that got appended
+        name=name.replace(/\s+\d{1,2}:\d{2}\s*(?:AM|PM).*/i,'').trim();
+        i++;
+
+        let type='',lead='',participants=[],startTime='',endTime='';
+
+        // Collect subsequent lines until next number or end
+        while(i<lines.length){
+          const l=lines[i];
+          // Stop if we hit the next program number
+          if(numRe.test(l)&&parseInt(l)>=1&&parseInt(l)<=25)break;
+          // Skip header/footer
+          if(skipRe.test(l)){i++;continue;}
+
+          // Time lines
+          const tMatch=l.match(timeRe);
+          if(tMatch){if(!startTime)startTime=tMatch[1];i++;continue;}
+          const aMatch=l.match(arrowRe);
+          if(aMatch){endTime=aMatch[1];i++;continue;}
+
+          // Type + Lead: "Group Dance · Lead: Payal Kumar"
+          const lMatch=l.match(leadRe);
+          if(lMatch){
+            const possibleType=lMatch[1].trim();
+            if(typeRe.test(possibleType))type=possibleType;
+            lead=lMatch[2].trim();
+            i++;continue;
+          }
+
+          // Type only
+          if(typeRe.test(l)&&!type){type=l;i++;continue;}
+
+          // Participant line — contains · or looks like names
+          if(l.includes('·')||l.includes('•')){
+            const parts=l.split(/[·•]/).map(p=>p.trim()).filter(p=>p.length>1&&p.length<60&&!/^\d/.test(p));
+            participants.push(...parts);
+            i++;continue;
+          }
+
+          // Standalone name line after lead is known (continuation of participants)
+          if(lead&&/^[A-Z]/.test(l)&&l.length<60&&!timeRe.test(l)&&!arrowRe.test(l)){
+            participants.push(l);
+            i++;continue;
+          }
+
+          i++;
+        }
+
+        // Clean lead from participants
+        if(lead)participants=participants.filter(p=>p.toLowerCase()!==lead.toLowerCase());
+
+        if(name)programs.push({num,name,type,lead,participants,startTime,endTime});
+        continue;
+      }
     }
-    if(current)current.lines.push(line);
+    i++;
   }
-  if(current)blocks.push(current);
-
-  // Dedupe by number
-  const seen=new Set();
-  const uniqueBlocks=blocks.filter(b=>{
-    if(seen.has(b.num))return false;
-    seen.add(b.num);
-    return true;
-  });
-
-  // If we have timeByY, sort its Y keys so we can assign times to blocks in order
-  const timeEntries=timeByY
-    ? Object.keys(timeByY).map(y=>({y:Number(y),t:timeByY[y]})).sort((a,b)=>a.y-b.y)
-    : [];
-
-  uniqueBlocks.forEach((block,blockIdx)=>{
-    let name='',type='',lead='',participants=[],startTime='',endTime='';
-
-    const bodyLines=block.lines;
-
-    // First line = program name (strip any leaked inline time)
-    let nameLine=(bodyLines[0]||'').replace(timeInlineRe,'').trim();
-    const typeInName=nameLine.match(typeRe);
-    if(typeInName){
-      name=nameLine.slice(0,typeInName.index).trim();
-      type=typeInName[0];
-    } else {
-      name=nameLine;
-    }
-
-    for(let i=1;i<bodyLines.length;i++){
-      const l=bodyLines[i].trim();
-      if(!l)continue;
-      // Skip any time lines that leaked through
-      if(/^\d{1,2}:\d{2}\s*(?:AM|PM)$/i.test(l))continue;
-      if(/^[→>]\s*\d{1,2}:\d{2}/i.test(l))continue;
-
-      // Type + lead: "Group Dance · Lead: Payal Kumar"
-      const typeLeadM=l.match(/(.+?)\s*[·•]\s*Lead:\s*(.+)/i);
-      if(typeLeadM){
-        if(!type)type=typeLeadM[1].trim();
-        // Lead is the full text after "Lead:" — it's on its own line so no bleed
-        lead=typeLeadM[2].replace(timeInlineRe,'').trim();
-        continue;
-      }
-      // Lead only
-      const leadOnlyM=l.match(leadRe);
-      if(leadOnlyM){
-        lead=leadOnlyM[1].replace(timeInlineRe,'').trim();
-        continue;
-      }
-      // Type only
-      if(typeRe.test(l)&&!type){type=l.replace(timeInlineRe,'').trim();continue;}
-      // Participant line
-      if(l.includes('·')||l.includes('•')){
-        const parts=l.split(/[·•]/).map(p=>p.replace(timeInlineRe,'').trim()).filter(p=>p.length>1&&p.length<60);
-        participants.push(...parts);
-        continue;
-      }
-    }
-
-    // Assign times from right column — each block gets the Nth and (N+1)th time entries
-    // matching the program's position in the list
-    if(timeEntries.length){
-      // Find start time = first time entry at or after this block's position
-      // Use 2 time entries per program (start and end)
-      const startIdx=blockIdx*2;
-      if(startIdx<timeEntries.length)startTime=timeEntries[startIdx].t;
-      if(startIdx+1<timeEntries.length)endTime=timeEntries[startIdx+1].t;
-    }
-
-    // Clean up lead from participants
-    if(lead){
-      participants=participants.filter(p=>p.toLowerCase()!==lead.toLowerCase());
-    }
-
-    if(name&&name.length>1){
-      programs.push({num:block.num,name,type,lead,participants,startTime,endTime});
-    }
-  });
-
   return programs;
 }
 
