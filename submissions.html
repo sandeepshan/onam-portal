@@ -577,10 +577,7 @@ async function loadSubmissions(){
   document.querySelector('[data-filter="all"]').classList.add('active');
   $('searchInput').value='';
   try{
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),15000);
-    const res=await fetch('/.netlify/functions/get-submissions',{signal:controller.signal});
-    clearTimeout(timer);
+    const res=await fetch('/.netlify/functions/get-submissions');
     const data=await res.json().catch(()=>({}));
     if(!res.ok||!data.ok)throw new Error(data.error||'Could not load submissions.');
     renderCards(data.submissions||[]);
