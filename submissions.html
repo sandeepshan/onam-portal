@@ -8,690 +8,788 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --cream: #FBF3E3;
-    --cream-dim: #F2E8D4;
-    --ochre: #C9762C;
-    --ochre-deep: #A85E1F;
-    --leaf: #2F4F3A;
-    --leaf-deep: #20392A;
-    --coral: #D94A3D;
-    --ink: #1F1B16;
-    --ink-soft: #5B5246;
-    --gold: #E0A23B;
-  }
+:root {
+  --cream:#FBF3E3; --cream-dim:#F2E8D4; --ochre:#C9762C; --ochre-deep:#A85E1F;
+  --leaf:#2F4F3A; --leaf-deep:#20392A; --coral:#D94A3D; --ink:#1F1B16;
+  --ink-soft:#5B5246; --gold:#E0A23B;
+  /* Stage palette */
+  --stage-bg:#141F18; --stage-card:#1C2D22; --stage-border:rgba(224,162,59,0.18);
+  --stage-text:#F0E8D4; --stage-soft:rgba(240,232,212,0.5); --stage-gold:#E0A23B;
+  --stage-leaf:#4A7A5A; --stage-coral:#E05A4E;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--cream);color:var(--ink);font-family:'Work Sans',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:6px;
+  background:repeating-linear-gradient(90deg,var(--coral) 0 24px,var(--gold) 24px 48px,var(--leaf) 48px 72px,var(--ochre) 72px 96px);z-index:20;}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ── Tab bar ── */
+.tab-bar{display:flex;align-items:stretch;border-bottom:1px solid rgba(31,27,22,0.1);background:#fff;margin-top:6px;padding:0 48px;}
+.tab-btn{font-family:'Work Sans',sans-serif;font-size:13.5px;font-weight:600;color:var(--ink-soft);
+  background:none;border:none;border-bottom:2.5px solid transparent;padding:16px 0;margin-right:32px;
+  cursor:pointer;letter-spacing:0.01em;transition:color 0.15s,border-color 0.15s;}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn.active{color:var(--leaf);border-bottom-color:var(--leaf);}
+.tab-btn.stage-tab.active{color:var(--stage-gold);border-bottom-color:var(--stage-gold);}
 
-  body {
-    background: var(--cream);
-    color: var(--ink);
-    font-family: 'Work Sans', sans-serif;
-    min-height: 100vh;
-  }
+/* ── Shared header ── */
+.site-header{padding:28px 48px 24px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;border-bottom:1px solid rgba(31,27,22,0.08);}
+.eyebrow{font-size:11.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--leaf);font-weight:600;margin-bottom:5px;}
+h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(24px,4vw,36px);line-height:1.1;color:var(--ink);letter-spacing:-0.01em;}
+h1 em{font-style:italic;color:var(--coral);font-weight:500;}
+.header-actions{display:flex;align-items:center;gap:10px;}
+.add-btn{background:var(--leaf);color:#fff;border:none;font-family:'Work Sans',sans-serif;font-size:13px;font-weight:600;padding:9px 18px;border-radius:2px;cursor:pointer;transition:background 0.12s;display:flex;align-items:center;gap:7px;}
+.add-btn:hover{background:var(--leaf-deep);}
+.refresh-btn{background:none;border:1.5px solid rgba(31,27,22,0.15);color:var(--ink-soft);font-family:'Work Sans',sans-serif;font-size:13px;font-weight:500;padding:7px 16px;border-radius:2px;cursor:pointer;transition:border-color 0.15s,color 0.15s;}
+.refresh-btn:hover{border-color:var(--ochre);color:var(--ochre-deep);}
 
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0; height: 6px;
-    background: repeating-linear-gradient(90deg,
-      var(--coral) 0 24px, var(--gold) 24px 48px,
-      var(--leaf) 48px 72px, var(--ochre) 72px 96px);
-    z-index: 10;
-  }
+/* ── Stats ── */
+.stats-strip{display:none;padding:20px 48px;border-bottom:1px solid rgba(31,27,22,0.08);background:#fff;flex-wrap:wrap;}
+.stats-strip.show{display:flex;}
+.stat{flex:1;min-width:100px;padding:4px 24px 4px 0;border-right:1px solid rgba(31,27,22,0.08);margin-right:24px;}
+.stat:last-child{border-right:none;margin-right:0;}
+.stat-value{font-family:'Fraunces',serif;font-size:30px;font-weight:600;color:var(--leaf);line-height:1;margin-bottom:3px;}
+.stat-value.warn{color:var(--coral);}
+.stat-label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-soft);}
 
-  /* ── Header ── */
-  .site-header {
-    padding: 40px 48px 32px;
-    margin-top: 6px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    border-bottom: 1px solid rgba(31,27,22,0.08);
-  }
+/* ── Toolbar ── */
+.toolbar{padding:14px 48px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid rgba(31,27,22,0.06);}
+.search-wrap{position:relative;flex:1;min-width:200px;max-width:360px;}
+.search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:0.3;pointer-events:none;}
+.search-input{width:100%;padding:9px 12px 9px 36px;font-family:'Work Sans',sans-serif;font-size:14px;color:var(--ink);background:#fff;border:1.5px solid rgba(31,27,22,0.12);border-radius:2px;outline:none;transition:border-color 0.15s;}
+.search-input:focus{border-color:var(--ochre);}
+.search-input::placeholder{color:rgba(31,27,22,0.3);}
+.filter-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.filter-btn{background:none;border:1.5px solid rgba(31,27,22,0.12);color:var(--ink-soft);font-family:'Work Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 13px;border-radius:2px;cursor:pointer;transition:all 0.12s;}
+.filter-btn:hover{border-color:var(--ochre);color:var(--ochre-deep);}
+.filter-btn.active{background:var(--leaf);border-color:var(--leaf);color:#fff;}
+.filter-btn.active-warn{background:var(--coral);border-color:var(--coral);color:#fff;}
+.result-label{font-size:13px;color:var(--ink-soft);margin-left:auto;white-space:nowrap;}
 
-  .eyebrow {
-    font-size: 11.5px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--leaf);
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
+/* ── Cards grid ── */
+.cards-wrap{padding:28px 48px 72px;}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;}
+.card{background:#fff;border:1px solid rgba(31,27,22,0.08);border-radius:3px;padding:22px 24px 18px;display:flex;flex-direction:column;gap:11px;transition:box-shadow 0.15s,border-color 0.15s,opacity 0.25s,transform 0.25s;position:relative;}
+.card:hover{box-shadow:0 4px 14px rgba(31,27,22,0.07);border-color:rgba(31,27,22,0.14);}
+.card.is-duplicate{border-color:rgba(217,74,61,0.3);border-left:3px solid var(--coral);}
+.card.is-manual{border-color:rgba(201,118,44,0.3);border-left:3px solid var(--ochre);}
+.card.removing{opacity:0;transform:scale(0.97);pointer-events:none;}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.card-num{font-size:11px;font-weight:600;color:var(--ink-soft);opacity:0.45;margin-bottom:3px;letter-spacing:0.05em;}
+.card-program{font-family:'Fraunces',serif;font-weight:600;font-size:17px;line-height:1.25;color:var(--ink);flex:1;}
+.type-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:3px 8px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+.type-pill.audio{background:rgba(224,162,59,0.14);color:var(--ochre-deep);}
+.type-pill.video{background:rgba(47,79,58,0.1);color:var(--leaf-deep);}
+.type-pill.manual{background:rgba(201,118,44,0.1);color:var(--ochre-deep);}
+.card-banner{display:none;align-items:center;justify-content:space-between;gap:10px;border-radius:2px;padding:7px 11px;}
+.card-banner.dup{background:rgba(217,74,61,0.06);border:1px solid rgba(217,74,61,0.18);}
+.card-banner.manual-tag{background:rgba(201,118,44,0.07);border:1px solid rgba(201,118,44,0.2);}
+.card.is-duplicate .card-banner.dup{display:flex;}
+.card.is-manual .card-banner.manual-tag{display:flex;}
+.banner-label{font-size:12px;font-weight:600;}
+.banner-label.dup{color:var(--coral);}
+.banner-label.manual{color:var(--ochre-deep);}
+.remove-btn{background:var(--coral);color:#fff;border:none;font-family:'Work Sans',sans-serif;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:2px;cursor:pointer;white-space:nowrap;transition:background 0.12s;flex-shrink:0;}
+.remove-btn:hover{background:#b83530;}
+.remove-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.card-desc{font-size:13.5px;line-height:1.65;color:var(--ink-soft);white-space:pre-wrap;word-break:break-word;}
+.card-desc.none{color:rgba(91,82,70,0.38);font-style:italic;}
+.card-desc.truncated{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.expand-btn{background:none;border:none;color:var(--ochre);font-size:12px;font-weight:600;cursor:pointer;padding:0;margin-top:-4px;}
+.expand-btn:hover{color:var(--ochre-deep);}
+.card-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(31,27,22,0.06);gap:8px;flex-wrap:wrap;}
+.card-name{font-size:13px;font-weight:600;color:var(--ink);}
+.card-date{font-size:12px;color:var(--ink-soft);}
+.confirm-overlay{display:none;position:absolute;inset:0;background:rgba(251,243,227,0.96);border-radius:3px;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:24px;text-align:center;z-index:2;}
+.confirm-overlay.show{display:flex;}
+.confirm-title{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--ink);}
+.confirm-sub{font-size:13px;color:var(--ink-soft);line-height:1.5;}
+.confirm-actions{display:flex;gap:10px;}
+.confirm-yes{background:var(--coral);color:#fff;border:none;font-family:'Work Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:2px;cursor:pointer;}
+.confirm-yes:disabled{opacity:0.5;cursor:not-allowed;}
+.confirm-no{background:none;border:1.5px solid rgba(31,27,22,0.15);color:var(--ink-soft);font-family:'Work Sans',sans-serif;font-size:13px;font-weight:500;padding:8px 16px;border-radius:2px;cursor:pointer;}
 
-  h1 {
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: clamp(26px, 4vw, 38px);
-    line-height: 1.1;
-    color: var(--ink);
-    letter-spacing: -0.01em;
-  }
+/* ── States ── */
+.state{padding:72px 48px;text-align:center;}
+.state-icon{font-size:40px;margin-bottom:16px;}
+.state h2{font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--ink);margin-bottom:8px;}
+.state p{font-size:14px;color:var(--ink-soft);line-height:1.6;max-width:340px;margin:0 auto;}
+.spinner{width:30px;height:30px;border:3px solid rgba(201,118,44,0.2);border-top-color:var(--ochre);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.error-box{background:#FCEAE7;border:1px solid rgba(217,74,61,0.25);color:#8E2E24;padding:13px 17px;border-radius:2px;font-size:14px;max-width:400px;margin:0 auto;}
+.empty-cards{padding:56px 48px;text-align:center;color:var(--ink-soft);font-size:14px;}
 
-  h1 em {
-    font-style: italic;
-    color: var(--coral);
-    font-weight: 500;
-  }
+/* ── Add Card Modal ── */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(31,27,22,0.45);z-index:100;align-items:center;justify-content:center;padding:24px;}
+.modal-backdrop.show{display:flex;}
+.modal{background:var(--cream);border-radius:4px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(31,27,22,0.25);}
+.modal-header{padding:26px 30px 18px;border-bottom:1px solid rgba(31,27,22,0.08);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-family:'Fraunces',serif;font-size:21px;font-weight:600;color:var(--ink);}
+.modal-title em{font-style:italic;color:var(--ochre);font-weight:500;}
+.modal-close{background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;opacity:0.5;transition:opacity 0.12s;}
+.modal-close:hover{opacity:1;}
+.modal-body{padding:24px 30px;display:flex;flex-direction:column;gap:20px;}
+.mfield label{display:block;font-size:12px;font-weight:600;letter-spacing:0.04em;color:var(--leaf-deep);margin-bottom:7px;text-transform:uppercase;}
+.mfield label .req{color:var(--coral);margin-left:2px;}
+.mfield label .hint{font-weight:400;color:var(--ink-soft);text-transform:none;letter-spacing:0;font-size:11.5px;}
+.mfield input[type="text"],.mfield input[type="email"],.mfield textarea,.mfield select{width:100%;padding:10px 12px;font-family:'Work Sans',sans-serif;font-size:14.5px;color:var(--ink);background:#fff;border:1.5px solid rgba(31,27,22,0.12);border-radius:2px;outline:none;transition:border-color 0.15s;}
+.mfield input:focus,.mfield textarea:focus,.mfield select:focus{border-color:var(--ochre);}
+.mfield input::placeholder,.mfield textarea::placeholder{color:rgba(31,27,22,0.3);}
+.mfield textarea{resize:vertical;min-height:80px;line-height:1.55;}
+.mfield select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%235B5246' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.modal-error{background:#FCEAE7;border:1px solid rgba(217,74,61,0.25);color:#8E2E24;padding:10px 13px;border-radius:2px;font-size:13px;display:none;}
+.modal-error.show{display:block;}
+.modal-foot{padding:0 30px 26px;display:flex;gap:10px;justify-content:flex-end;}
+.modal-cancel{background:none;border:1.5px solid rgba(31,27,22,0.15);color:var(--ink-soft);font-family:'Work Sans',sans-serif;font-size:13.5px;font-weight:500;padding:9px 18px;border-radius:2px;cursor:pointer;}
+.modal-cancel:hover{border-color:var(--ink);color:var(--ink);}
+.modal-save{background:var(--leaf);color:#fff;border:none;font-family:'Work Sans',sans-serif;font-size:13.5px;font-weight:600;padding:9px 22px;border-radius:2px;cursor:pointer;transition:background 0.12s;}
+.modal-save:hover{background:var(--leaf-deep);}
+.modal-save:disabled{background:#cbc3b3;cursor:not-allowed;}
 
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+/* ════════════════════════════════════════
+   STAGE / EMCEE TAB
+════════════════════════════════════════ */
+#stagePanel{display:none;background:var(--stage-bg);min-height:100vh;}
 
-  .refresh-btn {
-    background: none;
-    border: 1.5px solid rgba(31,27,22,0.15);
-    color: var(--ink-soft);
-    font-family: 'Work Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 7px 16px;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
-  }
-  .refresh-btn:hover { border-color: var(--ochre); color: var(--ochre-deep); }
+.stage-header{
+  padding:32px 48px 28px;
+  background:var(--stage-bg);
+  border-bottom:1px solid var(--stage-border);
+  display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;
+}
+.stage-eyebrow{font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--stage-gold);font-weight:600;margin-bottom:6px;opacity:0.7;}
+.stage-title{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(22px,3.5vw,32px);color:var(--stage-text);line-height:1.1;letter-spacing:-0.01em;}
+.stage-meta{font-size:13px;color:var(--stage-soft);margin-top:5px;line-height:1.6;}
 
-  /* ── Stats strip ── */
-  .stats-strip {
-    display: none;
-    padding: 24px 48px;
-    gap: 0;
-    border-bottom: 1px solid rgba(31,27,22,0.08);
-    background: #fff;
-  }
-  .stats-strip.show {
-    display: flex;
-    flex-wrap: wrap;
-  }
+.stage-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 
-  .stat {
-    flex: 1;
-    min-width: 120px;
-    padding: 4px 24px 4px 0;
-    border-right: 1px solid rgba(31,27,22,0.08);
-    margin-right: 24px;
-  }
-  .stat:last-child { border-right: none; margin-right: 0; }
+.upload-pdf-btn{
+  background:var(--stage-gold);color:var(--stage-bg);
+  border:none;font-family:'Work Sans',sans-serif;font-size:13px;font-weight:700;
+  padding:9px 18px;border-radius:2px;cursor:pointer;transition:opacity 0.12s;
+  display:flex;align-items:center;gap:7px;
+}
+.upload-pdf-btn:hover{opacity:0.88;}
+#pdfFileInput{display:none;}
 
-  .stat-value {
-    font-family: 'Fraunces', serif;
-    font-size: 32px;
-    font-weight: 600;
-    color: var(--leaf);
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-  .stat-value.warn { color: var(--coral); }
+.stage-secondary-btn{
+  background:none;border:1.5px solid rgba(224,162,59,0.35);color:var(--stage-soft);
+  font-family:'Work Sans',sans-serif;font-size:13px;font-weight:500;
+  padding:7px 16px;border-radius:2px;cursor:pointer;transition:border-color 0.15s,color 0.15s;
+}
+.stage-secondary-btn:hover{border-color:var(--stage-gold);color:var(--stage-text);}
 
-  .stat-label {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-  }
+/* Upload drop zone */
+.pdf-dropzone{
+  margin:48px 48px 0;
+  border:2px dashed rgba(224,162,59,0.25);border-radius:4px;
+  padding:64px 40px;text-align:center;
+  transition:border-color 0.15s,background 0.15s;
+  cursor:pointer;
+}
+.pdf-dropzone:hover,.pdf-dropzone.drag{border-color:var(--stage-gold);background:rgba(224,162,59,0.04);}
+.pdf-dropzone-icon{font-size:40px;margin-bottom:16px;opacity:0.6;}
+.pdf-dropzone-title{font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--stage-text);margin-bottom:8px;}
+.pdf-dropzone-sub{font-size:14px;color:var(--stage-soft);line-height:1.6;}
+.pdf-dropzone-sub strong{color:var(--stage-gold);}
 
-  /* ── Toolbar ── */
-  .toolbar {
-    padding: 18px 48px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid rgba(31,27,22,0.06);
-  }
+/* Run sheet */
+.run-sheet{padding:32px 48px 80px;}
 
-  .search-wrap {
-    position: relative;
-    flex: 1;
-    min-width: 200px;
-    max-width: 380px;
-  }
+.run-sheet-meta{
+  display:flex;gap:32px;flex-wrap:wrap;margin-bottom:36px;
+  padding-bottom:24px;border-bottom:1px solid var(--stage-border);
+}
+.rs-stat{display:flex;flex-direction:column;gap:3px;}
+.rs-stat-val{font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--stage-gold);line-height:1;}
+.rs-stat-label{font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--stage-soft);}
 
-  .search-wrap svg {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0.3;
-    pointer-events: none;
-  }
+/* Timeline */
+.timeline{display:flex;flex-direction:column;gap:0;}
 
-  .search-input {
-    width: 100%;
-    padding: 9px 12px 9px 38px;
-    font-family: 'Work Sans', sans-serif;
-    font-size: 14px;
-    color: var(--ink);
-    background: #fff;
-    border: 1.5px solid rgba(31,27,22,0.12);
-    border-radius: 2px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .search-input:focus { border-color: var(--ochre); }
-  .search-input::placeholder { color: rgba(31,27,22,0.3); }
+/* Add-slot button between items */
+.add-slot-row{
+  display:flex;align-items:center;gap:12px;
+  padding:6px 0;
+  opacity:0;
+  transition:opacity 0.15s;
+}
+.timeline:hover .add-slot-row,.add-slot-row:focus-within{opacity:1;}
+.add-slot-row::before,.add-slot-row::after{content:'';flex:1;height:1px;background:rgba(224,162,59,0.1);}
+.add-slot-btn{
+  background:none;border:1px solid rgba(224,162,59,0.3);color:var(--stage-gold);
+  font-family:'Work Sans',sans-serif;font-size:11.5px;font-weight:600;
+  padding:4px 12px;border-radius:20px;cursor:pointer;white-space:nowrap;
+  transition:background 0.12s,border-color 0.12s;letter-spacing:0.04em;
+}
+.add-slot-btn:hover{background:rgba(224,162,59,0.1);border-color:var(--stage-gold);}
 
-  .filter-btns {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
+/* Program row */
+.prog-row{
+  display:grid;
+  grid-template-columns:80px 1fr;
+  gap:0 20px;
+  padding:16px 0;
+  border-bottom:1px solid rgba(224,162,59,0.07);
+  position:relative;
+}
+.prog-row:last-child{border-bottom:none;}
 
-  .filter-btn {
-    background: none;
-    border: 1.5px solid rgba(31,27,22,0.12);
-    color: var(--ink-soft);
-    font-family: 'Work Sans', sans-serif;
-    font-size: 12.5px;
-    font-weight: 500;
-    padding: 6px 14px;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.12s;
-  }
-  .filter-btn:hover { border-color: var(--ochre); color: var(--ochre-deep); }
-  .filter-btn.active {
-    background: var(--leaf);
-    border-color: var(--leaf);
-    color: #fff;
-  }
-  .filter-btn.active-warn {
-    background: var(--coral);
-    border-color: var(--coral);
-    color: #fff;
-  }
+.prog-time{
+  text-align:right;
+  padding-top:3px;
+}
+.prog-time-start{
+  font-family:'Fraunces',serif;
+  font-size:16px;font-weight:600;
+  color:var(--stage-gold);
+  line-height:1;
+}
+.prog-time-end{font-size:11.5px;color:var(--stage-soft);margin-top:3px;}
+.prog-time-dur{
+  font-size:10.5px;font-weight:600;letter-spacing:0.06em;
+  color:rgba(224,162,59,0.5);
+  margin-top:4px;
+  text-transform:uppercase;
+}
 
-  .result-label {
-    font-size: 13px;
-    color: var(--ink-soft);
-    margin-left: auto;
-    white-space: nowrap;
-  }
+.prog-content{padding-left:4px;}
 
-  /* ── Cards grid ── */
-  .cards-wrap {
-    padding: 32px 48px 72px;
-  }
+.prog-num{
+  font-size:10.5px;font-weight:700;letter-spacing:0.1em;
+  color:var(--stage-soft);opacity:0.5;
+  margin-bottom:3px;text-transform:uppercase;
+}
 
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 18px;
-  }
+.prog-name{
+  font-family:'Fraunces',serif;font-weight:600;
+  font-size:clamp(16px,2.2vw,20px);
+  color:var(--stage-text);line-height:1.2;margin-bottom:5px;
+}
 
-  .card {
-    background: #fff;
-    border: 1px solid rgba(31,27,22,0.08);
-    border-radius: 3px;
-    padding: 24px 26px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    transition: box-shadow 0.15s, border-color 0.15s;
-    position: relative;
-  }
-  .card:hover {
-    box-shadow: 0 4px 16px rgba(31,27,22,0.07);
-    border-color: rgba(31,27,22,0.14);
-  }
+.prog-type-lead{
+  font-size:12.5px;color:var(--stage-soft);margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.prog-type-tag{
+  font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;
+  padding:2px 8px;border-radius:20px;
+}
+.prog-type-tag.dance{background:rgba(74,122,90,0.25);color:#7DC899;}
+.prog-type-tag.song{background:rgba(224,162,59,0.2);color:var(--stage-gold);}
+.prog-type-tag.other{background:rgba(240,232,212,0.1);color:var(--stage-soft);}
 
-  .card.is-duplicate {
-    border-color: rgba(217,74,61,0.3);
-    border-left: 3px solid var(--coral);
-  }
+.prog-lead{color:var(--stage-text);font-weight:600;}
 
-  .card-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-  }
+.prog-participants{
+  display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;
+}
+.participant-chip{
+  font-size:11.5px;color:var(--stage-soft);
+  background:rgba(240,232,212,0.06);
+  border:1px solid rgba(240,232,212,0.1);
+  padding:2px 9px;border-radius:20px;
+  white-space:nowrap;
+}
 
-  .card-num {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--ink-soft);
-    opacity: 0.5;
-    margin-bottom: 4px;
-    letter-spacing: 0.05em;
-  }
+/* Special/break slot */
+.slot-row{
+  display:grid;
+  grid-template-columns:80px 1fr;
+  gap:0 20px;
+  padding:12px 0;
+  border-bottom:1px solid rgba(224,162,59,0.07);
+}
+.slot-content{
+  display:flex;align-items:center;gap:12px;padding-left:4px;
+}
+.slot-icon{font-size:18px;flex-shrink:0;}
+.slot-name{font-size:15px;font-weight:600;color:var(--stage-text);}
+.slot-type-tag{
+  font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;
+  padding:2px 8px;border-radius:20px;
+  background:rgba(217,74,61,0.2);color:#F07070;
+}
+.slot-type-tag.game{background:rgba(74,122,90,0.25);color:#7DC899;}
+.slot-type-tag.break{background:rgba(224,162,59,0.15);color:var(--stage-gold);}
+.slot-remove-btn{
+  margin-left:auto;background:none;border:none;color:rgba(240,232,212,0.2);
+  font-size:16px;cursor:pointer;transition:color 0.12s;flex-shrink:0;
+}
+.slot-remove-btn:hover{color:var(--stage-coral);}
 
-  .card-program {
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: 18px;
-    line-height: 1.25;
-    color: var(--ink);
-    flex: 1;
-  }
+/* Add slot modal */
+.slot-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,18,13,0.75);z-index:200;align-items:center;justify-content:center;padding:24px;}
+.slot-modal-backdrop.show{display:flex;}
+.slot-modal{background:#1C2D22;border:1px solid var(--stage-border);border-radius:4px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.slot-modal-header{padding:22px 26px 16px;border-bottom:1px solid var(--stage-border);display:flex;align-items:center;justify-content:space-between;}
+.slot-modal-title{font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:var(--stage-text);}
+.slot-modal-close{background:none;border:none;font-size:18px;color:var(--stage-soft);cursor:pointer;opacity:0.5;transition:opacity 0.12s;}
+.slot-modal-close:hover{opacity:1;}
+.slot-modal-body{padding:22px 26px;display:flex;flex-direction:column;gap:18px;}
+.sfield label{display:block;font-size:11.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(224,162,59,0.7);margin-bottom:7px;}
+.sfield input[type="text"],.sfield select{width:100%;padding:10px 12px;font-family:'Work Sans',sans-serif;font-size:14px;color:var(--stage-text);background:rgba(255,255,255,0.06);border:1.5px solid rgba(224,162,59,0.2);border-radius:2px;outline:none;transition:border-color 0.15s;}
+.sfield input:focus,.sfield select:focus{border-color:var(--stage-gold);}
+.sfield input::placeholder{color:rgba(240,232,212,0.25);}
+.sfield select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='rgba(224,162,59,0.6)' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;background-color:rgba(255,255,255,0.06);}
+.sfield select option{background:#1C2D22;color:var(--stage-text);}
+.slot-modal-foot{padding:0 26px 22px;display:flex;gap:10px;justify-content:flex-end;}
+.slot-save-btn{background:var(--stage-gold);color:var(--stage-bg);border:none;font-family:'Work Sans',sans-serif;font-size:13px;font-weight:700;padding:9px 20px;border-radius:2px;cursor:pointer;transition:opacity 0.12s;}
+.slot-save-btn:hover{opacity:0.88;}
+.slot-save-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.slot-cancel-btn{background:none;border:1.5px solid rgba(224,162,59,0.2);color:var(--stage-soft);font-family:'Work Sans',sans-serif;font-size:13px;font-weight:500;padding:9px 16px;border-radius:2px;cursor:pointer;}
+.slot-cancel-btn:hover{border-color:var(--stage-gold);color:var(--stage-text);}
 
-  .type-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 4px 9px;
-    border-radius: 2px;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-  .type-pill.audio { background: rgba(224,162,59,0.14); color: var(--ochre-deep); }
-  .type-pill.video { background: rgba(47,79,58,0.1); color: var(--leaf-deep); }
+/* Parsing state */
+.stage-parsing{padding:64px 48px;text-align:center;}
+.stage-parsing .spinner{border-color:rgba(224,162,59,0.2);border-top-color:var(--stage-gold);}
+.stage-parsing p{font-size:14px;color:var(--stage-soft);margin-top:12px;}
 
-  .dup-badge {
-    display: none;
-    align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--coral);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    margin-top: 2px;
-  }
-  .card.is-duplicate .dup-badge { display: flex; }
-
-  .card-desc {
-    font-size: 14px;
-    line-height: 1.65;
-    color: var(--ink-soft);
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  .card-desc.none {
-    color: rgba(91,82,70,0.4);
-    font-style: italic;
-  }
-
-  /* Truncation */
-  .card-desc.truncated {
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .expand-btn {
-    background: none;
-    border: none;
-    color: var(--ochre);
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 0;
-    margin-top: -6px;
-    text-align: left;
-  }
-  .expand-btn:hover { color: var(--ochre-deep); }
-
-  .card-foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-top: 10px;
-    border-top: 1px solid rgba(31,27,22,0.06);
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .card-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--ink);
-  }
-
-  .card-date {
-    font-size: 12px;
-    color: var(--ink-soft);
-  }
-
-  /* ── States ── */
-  .state {
-    padding: 80px 48px;
-    text-align: center;
-  }
-  .state-icon { font-size: 42px; margin-bottom: 18px; }
-  .state h2 {
-    font-family: 'Fraunces', serif;
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--ink);
-    margin-bottom: 8px;
-  }
-  .state p { font-size: 14.5px; color: var(--ink-soft); line-height: 1.6; max-width: 340px; margin: 0 auto; }
-
-  .spinner {
-    width: 32px; height: 32px;
-    border: 3px solid rgba(201,118,44,0.2);
-    border-top-color: var(--ochre);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 18px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .error-box {
-    background: #FCEAE7;
-    border: 1px solid rgba(217,74,61,0.25);
-    color: #8E2E24;
-    padding: 14px 18px;
-    border-radius: 2px;
-    font-size: 14px;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-
-  .empty-cards {
-    padding: 60px 48px;
-    text-align: center;
-    color: var(--ink-soft);
-    font-size: 14.5px;
-  }
-
-  @media (max-width: 600px) {
-    .site-header, .stats-strip, .toolbar, .cards-wrap { padding-left: 18px; padding-right: 18px; }
-    .cards-grid { grid-template-columns: 1fr; }
-    .stat { min-width: 100px; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; animation: none !important; }
-  }
+@media(max-width:640px){
+  .site-header,.stats-strip,.toolbar,.cards-wrap,.stage-header,.run-sheet{padding-left:18px;padding-right:18px;}
+  .tab-bar{padding:0 18px;}
+  .cards-grid{grid-template-columns:1fr;}
+  .prog-row,.slot-row{grid-template-columns:64px 1fr;}
+  .field-row{grid-template-columns:1fr;}
+  .pdf-dropzone{margin-left:18px;margin-right:18px;}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
 </style>
 </head>
 <body>
 
-<header class="site-header">
-  <div>
-    <div class="eyebrow">Kalasandhya 2026</div>
-    <h1>Program <em>submissions</em></h1>
-  </div>
-  <div class="header-actions">
-    <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
-  </div>
-</header>
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tabSubmissions">📋 Submissions</button>
+  <button class="tab-btn stage-tab" id="tabStage">🎙 Emcee Run Sheet</button>
+</div>
 
-<!-- Stats strip -->
-<div class="stats-strip" id="statsStrip">
-  <div class="stat">
-    <div class="stat-value" id="statTotal">—</div>
-    <div class="stat-label">Total submissions</div>
+<!-- ══════════ SUBMISSIONS PANEL ══════════ -->
+<div id="submissionsPanel">
+  <header class="site-header">
+    <div>
+      <div class="eyebrow">Kalasandhya 2026</div>
+      <h1>Program <em>submissions</em></h1>
+    </div>
+    <div class="header-actions">
+      <button class="add-btn" id="addCardBtn">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        Add program
+      </button>
+      <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
+    </div>
+  </header>
+  <div class="stats-strip" id="statsStrip">
+    <div class="stat"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total</div></div>
+    <div class="stat"><div class="stat-value" id="statAudio">—</div><div class="stat-label">Audio</div></div>
+    <div class="stat"><div class="stat-value" id="statVideo">—</div><div class="stat-label">Video</div></div>
+    <div class="stat"><div class="stat-value" id="statManual">—</div><div class="stat-label">Manual</div></div>
+    <div class="stat"><div class="stat-value warn" id="statDups">—</div><div class="stat-label">Duplicates</div></div>
   </div>
-  <div class="stat">
-    <div class="stat-value" id="statAudio">—</div>
-    <div class="stat-label">Audio</div>
+  <div class="toolbar" id="toolbar" style="display:none">
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#1F1B16" stroke-width="1.5"/><path d="M10 10L14 14" stroke="#1F1B16" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search by program, name, or description…">
+    </div>
+    <div class="filter-btns">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="audio">🎵 Audio</button>
+      <button class="filter-btn" data-filter="video">🎬 Video</button>
+      <button class="filter-btn" data-filter="manual">✏️ Manual</button>
+      <button class="filter-btn" data-filter="duplicates" id="dupFilterBtn">⚠️ Duplicates</button>
+    </div>
+    <span class="result-label" id="resultLabel"></span>
   </div>
-  <div class="stat">
-    <div class="stat-value" id="statVideo">—</div>
-    <div class="stat-label">Video</div>
+  <div id="loadingState" class="state"><div class="spinner"></div><h2>Loading submissions</h2><p>Reading from Drive…</p></div>
+  <div id="errorState" class="state" style="display:none"><div class="state-icon">⚠️</div><div class="error-box" id="errorMsg"></div></div>
+  <div id="cardsState" style="display:none"><div class="cards-wrap"><div class="cards-grid" id="cardsGrid"></div><div class="empty-cards" id="emptyCards" style="display:none">No programs match your search.</div></div></div>
+  <div id="emptyState" class="state" style="display:none"><div class="state-icon">🌺</div><h2>No submissions yet</h2><p>Participant uploads appear here. You can also add programs manually.</p></div>
+</div>
+
+<!-- ══════════ STAGE / EMCEE PANEL ══════════ -->
+<div id="stagePanel">
+  <div class="stage-header">
+    <div>
+      <div class="stage-eyebrow">Kalasandhya 2026</div>
+      <div class="stage-title">Emcee Run Sheet</div>
+      <div class="stage-meta" id="stageMeta">Upload the program PDF to generate the run sheet.</div>
+    </div>
+    <div class="stage-actions">
+      <button class="upload-pdf-btn" id="uploadPdfBtn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Upload PDF
+      </button>
+      <input type="file" id="pdfFileInput" accept="application/pdf,.pdf">
+      <button class="stage-secondary-btn" id="clearRunSheet" style="display:none">✕ Clear</button>
+    </div>
   </div>
-  <div class="stat">
-    <div class="stat-value" id="statNoDesc">—</div>
-    <div class="stat-label">No description</div>
+
+  <!-- Drop zone (shown when no PDF loaded) -->
+  <div class="pdf-dropzone" id="pdfDropzone">
+    <div class="pdf-dropzone-icon">📄</div>
+    <div class="pdf-dropzone-title">Drop your program PDF here</div>
+    <div class="pdf-dropzone-sub">Or <strong>click Upload PDF</strong> above — the Kalasandhya Program Coordination export works perfectly.</div>
   </div>
-  <div class="stat">
-    <div class="stat-value warn" id="statDups">—</div>
-    <div class="stat-label">Possible duplicates</div>
+
+  <!-- Parsing indicator -->
+  <div class="stage-parsing" id="stageParsing" style="display:none">
+    <div class="spinner"></div>
+    <p>Reading program list…</p>
+  </div>
+
+  <!-- Run sheet (populated after parse) -->
+  <div class="run-sheet" id="runSheet" style="display:none">
+    <div class="run-sheet-meta" id="runSheetMeta"></div>
+    <div class="timeline" id="timeline"></div>
   </div>
 </div>
 
-<!-- Toolbar -->
-<div class="toolbar" id="toolbar" style="display:none">
-  <div class="search-wrap">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="6.5" cy="6.5" r="4.5" stroke="#1F1B16" stroke-width="1.5"/>
-      <path d="M10 10L14 14" stroke="#1F1B16" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
-    <input type="text" class="search-input" id="searchInput" placeholder="Search by program, name, or description…">
-  </div>
-  <div class="filter-btns">
-    <button class="filter-btn active" data-filter="all">All</button>
-    <button class="filter-btn" data-filter="audio">🎵 Audio</button>
-    <button class="filter-btn" data-filter="video">🎬 Video</button>
-    <button class="filter-btn" data-filter="duplicates" id="dupFilterBtn">⚠️ Duplicates</button>
-  </div>
-  <span class="result-label" id="resultLabel"></span>
-</div>
-
-<!-- Main content -->
-<div id="loadingState" class="state">
-  <div class="spinner"></div>
-  <h2>Loading submissions</h2>
-  <p>Reading from Drive…</p>
-</div>
-
-<div id="errorState" class="state" style="display:none">
-  <div class="state-icon">⚠️</div>
-  <div class="error-box" id="errorMsg"></div>
-</div>
-
-<div id="cardsState" style="display:none">
-  <div class="cards-wrap">
-    <div class="cards-grid" id="cardsGrid"></div>
-    <div class="empty-cards" id="emptyCards" style="display:none">No programs match your search.</div>
+<!-- Add card modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add a <em>program</em></div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-error" id="modalError"></div>
+      <div class="field-row">
+        <div class="mfield"><label>Performer name <span class="req">*</span></label><input type="text" id="m-name" placeholder="e.g. Priya Nair"></div>
+        <div class="mfield"><label>Email <span class="hint">— optional</span></label><input type="email" id="m-email" placeholder="you@example.com"></div>
+      </div>
+      <div class="mfield"><label>Program name <span class="req">*</span></label><input type="text" id="m-program" placeholder="e.g. Thiruvathira, Margamkali"></div>
+      <div class="mfield"><label>Description <span class="hint">— optional</span></label><textarea id="m-desc" placeholder="A line or two about the program…"></textarea></div>
+      <div class="mfield"><label>Media type</label>
+        <select id="m-type"><option value="manual">Not yet submitted</option><option value="audio">Audio</option><option value="video">Video</option></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-cancel" id="modalCancel">Cancel</button>
+      <button class="modal-save" id="modalSave">Save program</button>
+    </div>
   </div>
 </div>
 
-<div id="emptyState" class="state" style="display:none">
-  <div class="state-icon">🌺</div>
-  <h2>No submissions yet</h2>
-  <p>Once participants upload their entries, they'll appear here.</p>
+<!-- Add slot modal (stage mode) -->
+<div class="slot-modal-backdrop" id="slotModalBackdrop">
+  <div class="slot-modal">
+    <div class="slot-modal-header">
+      <div class="slot-modal-title">Insert a slot</div>
+      <button class="slot-modal-close" id="slotModalClose">✕</button>
+    </div>
+    <div class="slot-modal-body">
+      <div class="sfield"><label>Slot name</label><input type="text" id="s-name" placeholder="e.g. Tea break, Menti Quiz, Lucky draw…"></div>
+      <div class="sfield"><label>Type</label>
+        <select id="s-type">
+          <option value="break">☕ Break</option>
+          <option value="game">🎮 Game / Activity</option>
+          <option value="announcement">📢 Announcement</option>
+          <option value="other">✨ Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="slot-modal-foot">
+      <button class="slot-cancel-btn" id="slotCancel">Cancel</button>
+      <button class="slot-save-btn" id="slotSave">Insert slot</button>
+    </div>
+  </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-(function () {
-  const $ = id => document.getElementById(id);
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
 
-  const states = {
-    loading: $('loadingState'),
-    error:   $('errorState'),
-    cards:   $('cardsState'),
-    empty:   $('emptyState'),
-  };
+// ── Tab switching ──
+const submissionsPanel=$('submissionsPanel');
+const stagePanel=$('stagePanel');
+$('tabSubmissions').addEventListener('click',()=>{
+  submissionsPanel.style.display=''; stagePanel.style.display='none';
+  $('tabSubmissions').classList.add('active'); $('tabStage').classList.remove('active');
+  document.body.style.background='var(--cream)';
+});
+$('tabStage').addEventListener('click',()=>{
+  submissionsPanel.style.display='none'; stagePanel.style.display='block';
+  $('tabStage').classList.add('active'); $('tabSubmissions').classList.remove('active');
+  document.body.style.background='var(--stage-bg)';
+});
 
-  function showState(which) {
-    Object.values(states).forEach(el => el.style.display = 'none');
-    states[which].style.display = '';
+// ════════════════════════════
+// SUBMISSIONS TAB
+// ════════════════════════════
+const stateEls={loading:$('loadingState'),error:$('errorState'),cards:$('cardsState'),empty:$('emptyState')};
+function showState(w){Object.values(stateEls).forEach(el=>el.style.display='none');stateEls[w].style.display='';}
+function fileType(f){if(!f)return'unknown';if(f.includes('manually added')){if(f.includes('audio'))return'audio';if(f.includes('video'))return'video';return'manual';}const e=(f.split('.').pop()||'').toLowerCase();return['mp3','wav','aac','flac','ogg','m4a','aiff'].includes(e)?'audio':'video';}
+function fmtDate(s){return s?s.split(',')[0]:'—';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function detectDups(subs){const pc={},ec={};subs.forEach(s=>{const pk=(s.program||'').toLowerCase().trim(),ek=(s.email||'').toLowerCase().trim();if(pk)pc[pk]=(pc[pk]||0)+1;if(ek&&ek!=='(not provided)')ec[ek]=(ec[ek]||0)+1;});return subs.map(s=>({...s,isDuplicate:pc[(s.program||'').toLowerCase().trim()]>1||((s.email&&s.email!=='(not provided)')&&ec[(s.email||'').toLowerCase().trim()]>1)}));}
+
+let allCards=[],activeFilter='all',searchQuery='';
+function applyFilters(){const q=searchQuery.toLowerCase();let shown=0;allCards.forEach(({el,submission})=>{const type=fileType(submission.mediaFile);const ms=!q||(submission.program||'').toLowerCase().includes(q)||(submission.name||'').toLowerCase().includes(q)||(submission.description||'').toLowerCase().includes(q);const mf=activeFilter==='all'||(activeFilter==='audio'&&type==='audio')||(activeFilter==='video'&&type==='video')||(activeFilter==='manual'&&type==='manual')||(activeFilter==='duplicates'&&submission.isDuplicate);const v=ms&&mf;el.style.display=v?'':'none';if(v)shown++;});$('emptyCards').style.display=shown===0&&allCards.length>0?'':'none';$('resultLabel').textContent=shown===allCards.length?`${allCards.length} submission${allCards.length!==1?'s':''}`:`${shown} of ${allCards.length} shown`;}
+function updateStats(){const live=allCards.filter(c=>!c.removed);$('statTotal').textContent=live.length;$('statAudio').textContent=live.filter(c=>fileType(c.submission.mediaFile)==='audio').length;$('statVideo').textContent=live.filter(c=>fileType(c.submission.mediaFile)==='video').length;$('statManual').textContent=live.filter(c=>fileType(c.submission.mediaFile)==='manual').length;const d=live.filter(c=>c.submission.isDuplicate).length;$('statDups').textContent=d;$('dupFilterBtn').textContent=d>0?`⚠️ Duplicates (${d})`:'Duplicates';}
+async function deleteSubmission(fileId,cardEntry){try{const res=await fetch('/.netlify/functions/delete-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fileId})});const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not delete.');cardEntry.el.classList.add('removing');cardEntry.removed=true;cardEntry.submission.isDuplicate=false;setTimeout(()=>{cardEntry.el.style.display='none';allCards=allCards.filter(c=>c!==cardEntry);updateStats();applyFilters();},260);}catch(err){return err.message||'Could not delete.';}}
+function buildCard(s,index){const type=fileType(s.mediaFile);const isManual=type==='manual';const hasDesc=s.description&&s.description!=='(none provided)';const isLong=hasDesc&&s.description.length>280;const did=`desc-${Date.now()}-${index}`;const card=document.createElement('div');card.className='card'+(s.isDuplicate?' is-duplicate':'')+(isManual?' is-manual':'');const pill=type==='audio'?`<span class="type-pill audio">🎵 Audio</span>`:type==='video'?`<span class="type-pill video">🎬 Video</span>`:`<span class="type-pill manual">✏️ Manual</span>`;const descHtml=hasDesc?`<div class="card-desc${isLong?' truncated':''}" id="${did}">${esc(s.description)}</div>${isLong?`<button class="expand-btn">Show more ↓</button>`:''}`:`<div class="card-desc none">No description provided</div>`;card.innerHTML=`<div><div class="card-num">#${index+1}</div><div class="card-top"><div class="card-program">${esc(s.program||'—')}</div>${pill}</div></div><div class="card-banner dup"><span class="banner-label dup">⚠ Possible duplicate</span><button class="remove-btn">Remove entry</button></div><div class="card-banner manual-tag"><span class="banner-label manual">✏ Added manually</span><button class="remove-btn">Remove entry</button></div>${descHtml}<div class="card-foot"><span class="card-name">${esc(s.name||'—')}</span><span class="card-date">${esc(fmtDate(s.submitted))}</span></div><div class="confirm-overlay"><div class="confirm-title">Remove this entry?</div><div class="confirm-sub">Deletes the record from Drive.<br>Media file won't be affected.</div><div class="confirm-actions"><button class="confirm-yes">Yes, remove it</button><button class="confirm-no">Cancel</button></div></div>`;const eb=card.querySelector('.expand-btn');if(eb)eb.addEventListener('click',()=>{const de=card.querySelector(`#${did}`);const t=de.classList.contains('truncated');de.classList.toggle('truncated',!t);eb.textContent=t?'Show less ↑':'Show more ↓';});const ov=card.querySelector('.confirm-overlay');card.querySelectorAll('.remove-btn').forEach(b=>b.addEventListener('click',()=>ov.classList.add('show')));card.querySelector('.confirm-no').addEventListener('click',()=>ov.classList.remove('show'));card.querySelector('.confirm-yes').addEventListener('click',async function(){if(!s._fileId){ov.classList.remove('show');return;}this.disabled=true;this.textContent='Removing…';const ce=allCards.find(c=>c.el===card);const err=await deleteSubmission(s._fileId,ce);if(err){this.disabled=false;this.textContent='Yes, remove it';ov.classList.remove('show');}});return card;}
+function renderCards(submissions){const grid=$('cardsGrid');grid.innerHTML='';allCards=[];if(!submissions.length){showState('empty');$('statsStrip').classList.remove('show');$('toolbar').style.display='none';return;}const wd=detectDups(submissions);wd.forEach((s,i)=>{const card=buildCard(s,i);grid.appendChild(card);allCards.push({el:card,submission:s,removed:false});});updateStats();showState('cards');$('statsStrip').classList.add('show');$('toolbar').style.display='';applyFilters();}
+function prependCard(submission){const grid=$('cardsGrid');const all=[submission,...allCards.map(c=>c.submission)];const wd=detectDups(all);submission.isDuplicate=wd[0].isDuplicate;const card=buildCard(submission,0);card.style.opacity='0';card.style.transform='translateY(-8px)';grid.prepend(card);const entry={el:card,submission,removed:false};allCards.unshift(entry);requestAnimationFrame(()=>{card.style.transition='opacity 0.3s ease,transform 0.3s ease';card.style.opacity='1';card.style.transform='translateY(0)';});allCards.forEach((c,i)=>{const n=c.el.querySelector('.card-num');if(n)n.textContent=`#${i+1}`;});updateStats();showState('cards');$('statsStrip').classList.add('show');$('toolbar').style.display='';applyFilters();}
+$('searchInput').addEventListener('input',e=>{searchQuery=e.target.value;applyFilters();});
+document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));activeFilter=btn.dataset.filter;btn.classList.add(activeFilter==='duplicates'?'active-warn':'active');applyFilters();}));
+async function loadSubmissions(){showState('loading');$('statsStrip').classList.remove('show');$('toolbar').style.display='none';searchQuery='';activeFilter='all';document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','active-warn'));document.querySelector('[data-filter="all"]').classList.add('active');$('searchInput').value='';try{const res=await fetch('/.netlify/functions/get-submissions');const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not load submissions.');renderCards(data.submissions||[]);}catch(err){showState('error');$('errorMsg').textContent=err.message||'Something went wrong.';}}
+$('refreshBtn').addEventListener('click',loadSubmissions);
+// Add card modal
+const backdrop=$('modalBackdrop');
+const mName=$('m-name'),mEmail=$('m-email'),mProgram=$('m-program'),mDesc=$('m-desc'),mType=$('m-type'),mError=$('modalError'),mSave=$('modalSave');
+function openModal(){mName.value='';mEmail.value='';mProgram.value='';mDesc.value='';mType.value='manual';mError.classList.remove('show');mError.textContent='';mSave.disabled=false;mSave.textContent='Save program';backdrop.classList.add('show');setTimeout(()=>mName.focus(),50);}
+function closeModal(){backdrop.classList.remove('show');}
+$('addCardBtn').addEventListener('click',openModal);
+$('modalClose').addEventListener('click',closeModal);
+$('modalCancel').addEventListener('click',closeModal);
+backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&backdrop.classList.contains('show'))closeModal();});
+mSave.addEventListener('click',async()=>{mError.classList.remove('show');const name=mName.value.trim(),email=mEmail.value.trim(),program=mProgram.value.trim(),desc=mDesc.value.trim(),mtype=mType.value;if(!name){mError.textContent='Performer name is required.';mError.classList.add('show');mName.focus();return;}if(!program){mError.textContent='Program name is required.';mError.classList.add('show');mProgram.focus();return;}if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){mError.textContent='Enter a valid email or leave it blank.';mError.classList.add('show');mEmail.focus();return;}mSave.disabled=true;mSave.textContent='Saving…';try{const res=await fetch('/.netlify/functions/add-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,program,description:desc,mediaType:mtype})});const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not save.');closeModal();prependCard(data.submission);}catch(err){mError.textContent=err.message||'Something went wrong.';mError.classList.add('show');mSave.disabled=false;mSave.textContent='Save program';}});
+
+// ════════════════════════════
+// STAGE / EMCEE TAB
+// ════════════════════════════
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let runSheetItems=[]; // array of {type:'program'|'slot', data:{...}}
+let pendingInsertIndex=null;
+
+// PDF upload triggers
+$('uploadPdfBtn').addEventListener('click',()=>$('pdfFileInput').click());
+$('pdfFileInput').addEventListener('change',e=>{if(e.target.files&&e.target.files[0])parsePDF(e.target.files[0]);});
+
+// Drag-drop on dropzone
+const dz=$('pdfDropzone');
+dz.addEventListener('click',()=>$('pdfFileInput').click());
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
+dz.addEventListener('drop',e=>{if(e.dataTransfer.files&&e.dataTransfer.files[0])parsePDF(e.dataTransfer.files[0]);});
+
+$('clearRunSheet').addEventListener('click',()=>{runSheetItems=[];$('runSheet').style.display='none';$('stageParsing').style.display='none';dz.style.display='';$('clearRunSheet').style.display='none';$('stageMeta').textContent='Upload the program PDF to generate the run sheet.';});
+
+async function parsePDF(file){
+  dz.style.display='none';
+  $('runSheet').style.display='none';
+  $('stageParsing').style.display='block';
+
+  try{
+    const arrayBuffer=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+    let fullText='';
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      fullText+=tc.items.map(i=>i.str).join(' ')+'\n';
+    }
+    const programs=parseRunSheet(fullText);
+    runSheetItems=programs.map(p=>({type:'program',data:p}));
+    renderRunSheet(file.name);
+    $('stageParsing').style.display='none';
+    $('runSheet').style.display='block';
+    $('clearRunSheet').style.display='';
+  }catch(err){
+    $('stageParsing').style.display='none';
+    dz.style.display='';
+    console.error('PDF parse error:',err);
+    alert('Could not read the PDF. Make sure it is the Kalasandhya Program Coordination export.');
   }
+}
 
-  function fileType(mediaFile) {
-    if (!mediaFile) return 'unknown';
-    const ext = (mediaFile.split('.').pop() || '').toLowerCase();
-    return ['mp3','wav','aac','flac','ogg','m4a','aiff'].includes(ext) ? 'audio' : 'video';
-  }
+function parseRunSheet(text){
+  // Extract event meta
+  const programs=[];
 
-  function formatDate(submitted) {
-    if (!submitted) return '—';
-    return submitted.split(',')[0] || submitted;
-  }
+  // Match patterns like:
+  // "1 Welcome speech 4:00 PM"
+  // "2 Tatva Sparkling Stars Group Dance · Lead: Payal Kumar ... 4:04 PM → 4:09 PM"
+  // Numbers followed by program name and time
+  const lines=text.split(/\n/);
+  const cleanLines=lines.map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const joined=cleanLines.join(' ');
 
-  function escHtml(str) {
-    return String(str || '')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  // Detect duplicates: same program name (case-insensitive) OR same email
-  function detectDuplicates(submissions) {
-    const programCount = {};
-    const emailCount = {};
-    submissions.forEach(s => {
-      const pk = (s.program || '').toLowerCase().trim();
-      const ek = (s.email || '').toLowerCase().trim();
-      if (pk) programCount[pk] = (programCount[pk] || 0) + 1;
-      if (ek) emailCount[ek] = (emailCount[ek] || 0) + 1;
+  // Use regex to find numbered entries
+  // Pattern: number, then text until we hit a time HH:MM PM/AM
+  const entryRe=/(\d+)\s+([A-Za-z].+?)(\d{1,2}:\d{2}\s*(?:AM|PM))(?:\s*[→>]\s*(\d{1,2}:\d{2}\s*(?:AM|PM)))?/g;
+  let match;
+  const rawEntries=[];
+  while((match=entryRe.exec(joined))!==null){
+    rawEntries.push({
+      num:parseInt(match[1]),
+      raw:match[2].trim(),
+      startTime:match[3].trim(),
+      endTime:match[4]?match[4].trim():null
     });
-    return submissions.map(s => {
-      const pk = (s.program || '').toLowerCase().trim();
-      const ek = (s.email || '').toLowerCase().trim();
-      const isDup = (programCount[pk] > 1) || (emailCount[ek] > 1);
-      return { ...s, isDuplicate: isDup };
-    });
   }
 
-  let allCards = [];
-  let activeFilter = 'all';
-  let searchQuery = '';
+  // Dedupe: keep first occurrence of each number
+  const seen=new Set();
+  const entries=rawEntries.filter(e=>{if(seen.has(e.num))return false;seen.add(e.num);return true;});
 
-  function applyFilters() {
-    const q = searchQuery.toLowerCase();
-    let shown = 0;
-
-    allCards.forEach(({ el, submission }) => {
-      const matchSearch = !q ||
-        (submission.program || '').toLowerCase().includes(q) ||
-        (submission.name || '').toLowerCase().includes(q) ||
-        (submission.description || '').toLowerCase().includes(q);
-
-      const type = fileType(submission.mediaFile);
-      const matchFilter =
-        activeFilter === 'all' ||
-        (activeFilter === 'audio' && type === 'audio') ||
-        (activeFilter === 'video' && type === 'video') ||
-        (activeFilter === 'duplicates' && submission.isDuplicate);
-
-      const visible = matchSearch && matchFilter;
-      el.style.display = visible ? '' : 'none';
-      if (visible) shown++;
-    });
-
-    $('emptyCards').style.display = shown === 0 ? '' : 'none';
-    $('resultLabel').textContent = shown === allCards.length
-      ? `${allCards.length} submission${allCards.length !== 1 ? 's' : ''}`
-      : `${shown} of ${allCards.length} shown`;
-  }
-
-  function renderCards(submissions) {
-    const grid = $('cardsGrid');
-    grid.innerHTML = '';
-    allCards = [];
-
-    if (!submissions.length) { showState('empty'); return; }
-
-    const withDups = detectDuplicates(submissions);
-    const dupCount = withDups.filter(s => s.isDuplicate).length;
-    const audioCount = withDups.filter(s => fileType(s.mediaFile) === 'audio').length;
-    const videoCount = withDups.filter(s => fileType(s.mediaFile) === 'video').length;
-    const noDescCount = withDups.filter(s => !s.description || s.description === '(none provided)').length;
-
-    // Stats
-    $('statTotal').textContent = submissions.length;
-    $('statAudio').textContent = audioCount;
-    $('statVideo').textContent = videoCount;
-    $('statNoDesc').textContent = noDescCount;
-    $('statDups').textContent = dupCount;
-    $('statsStrip').classList.add('show');
-    $('toolbar').style.display = '';
-
-    // Update dup filter button label
-    if (dupCount > 0) {
-      $('dupFilterBtn').textContent = `⚠️ Duplicates (${dupCount})`;
+  entries.forEach(e=>{
+    // Parse type and lead from raw text
+    // Pattern: "Program Name Group Dance · Lead: Someone Participants..."
+    let name=e.raw,type='',lead='',participants=[];
+    const typeMatch=e.raw.match(/^(.*?)\s+(Group Dance|Group Song|Thiruvathirakali|Duet Song|Duet Dance|Solo|Group)\s*[·•]\s*Lead:\s*([^\·•]+)/i);
+    if(typeMatch){
+      name=typeMatch[1].trim();
+      type=typeMatch[2].trim();
+      const afterLead=typeMatch[3];
+      // Participants come after the lead name — they look like "Name · Name · Name"
+      const leadParts=afterLead.split(/[·•]/);
+      lead=leadParts[0].trim();
+      // Remaining are participants
+      const remaining=e.raw.slice(e.raw.indexOf(typeMatch[3])+typeMatch[3].length);
+      participants=remaining.split(/[·•]/).map(p=>p.trim()).filter(p=>p.length>1&&p.length<50&&!/\d{1,2}:\d{2}/.test(p));
+    } else {
+      // No type/lead — might be a standalone item like "Welcome speech", "Maveli/Chendamelam"
+      name=e.raw.replace(/\d{1,2}:\d{2}\s*(?:AM|PM).*/,'').trim();
     }
 
-    withDups.forEach((s, i) => {
-      const type = fileType(s.mediaFile);
-      const hasDesc = s.description && s.description !== '(none provided)';
-      const isLong = hasDesc && s.description.length > 280;
-
-      const card = document.createElement('div');
-      card.className = 'card' + (s.isDuplicate ? ' is-duplicate' : '');
-
-      const typeLabel = type === 'audio'
-        ? `<span class="type-pill audio">🎵 Audio</span>`
-        : `<span class="type-pill video">🎬 Video</span>`;
-
-      const descHtml = hasDesc
-        ? `<div class="card-desc${isLong ? ' truncated' : ''}" id="desc-${i}">${escHtml(s.description)}</div>${isLong ? `<button class="expand-btn" data-target="desc-${i}">Show more ↓</button>` : ''}`
-        : `<div class="card-desc none">No description provided</div>`;
-
-      card.innerHTML = `
-        <div>
-          <div class="card-num">#${i + 1}</div>
-          <div class="card-top">
-            <div class="card-program">${escHtml(s.program || '—')}</div>
-            ${typeLabel}
-          </div>
-          <div class="dup-badge">⚠ Possible duplicate</div>
-        </div>
-        ${descHtml}
-        <div class="card-foot">
-          <span class="card-name">${escHtml(s.name || '—')}</span>
-          <span class="card-date">${escHtml(formatDate(s.submitted))}</span>
-        </div>
-      `;
-
-      // Expand/collapse long descriptions
-      const expandBtn = card.querySelector('.expand-btn');
-      if (expandBtn) {
-        expandBtn.addEventListener('click', () => {
-          const descEl = card.querySelector(`#desc-${i}`);
-          const expanded = !descEl.classList.contains('truncated');
-          descEl.classList.toggle('truncated', expanded);
-          expandBtn.textContent = expanded ? 'Show more ↓' : 'Show less ↑';
-        });
-      }
-
-      grid.appendChild(card);
-      allCards.push({ el: card, submission: s });
+    programs.push({
+      num:e.num,
+      name,
+      type,
+      lead,
+      participants,
+      startTime:e.startTime,
+      endTime:e.endTime,
     });
-
-    showState('cards');
-    applyFilters();
-  }
-
-  // Search
-  $('searchInput').addEventListener('input', e => {
-    searchQuery = e.target.value;
-    applyFilters();
   });
 
-  // Filter buttons
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => {
-        b.classList.remove('active', 'active-warn');
+  return programs;
+}
+
+function calcDuration(start,end){
+  if(!start||!end)return null;
+  const toMins=t=>{const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!m)return 0;let h=parseInt(m[1]),min=parseInt(m[2]);if(m[3].toUpperCase()==='PM'&&h!==12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return h*60+min;};
+  const diff=toMins(end)-toMins(start);
+  if(diff<=0)return null;
+  return diff===1?'1 min':`${diff} mins`;
+}
+
+function typeTag(t){
+  const tl=(t||'').toLowerCase();
+  if(tl.includes('dance'))return['dance','Dance'];
+  if(tl.includes('song'))return['song','Song'];
+  if(tl.includes('thiru'))return['dance','Thiruvathirakali'];
+  return['other',t||'Program'];
+}
+
+function slotTypeInfo(t){
+  if(t==='break')return{icon:'☕',label:'Break',cls:'break'};
+  if(t==='game')return{icon:'🎮',label:'Game',cls:'game'};
+  if(t==='announcement')return{icon:'📢',label:'Announcement',cls:'other'};
+  return{icon:'✨',label:'Special',cls:'other'};
+}
+
+function renderRunSheet(filename){
+  const programs=runSheetItems.filter(i=>i.type==='program').map(i=>i.data);
+  const total=programs.length;
+  const firstTime=programs[0]?.startTime||'';
+  const lastTime=programs[programs.length-1]?.endTime||programs[programs.length-1]?.startTime||'';
+  const totalParticipants=[...new Set(programs.flatMap(p=>[p.lead,...p.participants]).filter(Boolean))].length;
+
+  $('stageMeta').textContent=`${filename} · ${total} programs · ${firstTime}${lastTime?' – '+lastTime:''}`;
+
+  $('runSheetMeta').innerHTML=`
+    <div class="rs-stat"><div class="rs-stat-val">${total}</div><div class="rs-stat-label">Programs</div></div>
+    <div class="rs-stat"><div class="rs-stat-val">${totalParticipants}</div><div class="rs-stat-label">Participants</div></div>
+    <div class="rs-stat"><div class="rs-stat-val">${firstTime}</div><div class="rs-stat-label">Start time</div></div>
+    <div class="rs-stat"><div class="rs-stat-val">${lastTime||'—'}</div><div class="rs-stat-label">Est. finish</div></div>
+  `;
+
+  const timeline=$('timeline');
+  timeline.innerHTML='';
+
+  runSheetItems.forEach((item,index)=>{
+    // Add slot button before each item
+    const addRow=document.createElement('div');
+    addRow.className='add-slot-row';
+    addRow.innerHTML=`<button class="add-slot-btn">+ Add slot here</button>`;
+    addRow.querySelector('.add-slot-btn').addEventListener('click',()=>openSlotModal(index));
+    timeline.appendChild(addRow);
+
+    if(item.type==='program'){
+      const p=item.data;
+      const dur=calcDuration(p.startTime,p.endTime);
+      const [tagCls,tagLabel]=typeTag(p.type);
+      const row=document.createElement('div');
+      row.className='prog-row';
+      row.innerHTML=`
+        <div class="prog-time">
+          <div class="prog-time-start">${p.startTime||'—'}</div>
+          ${p.endTime?`<div class="prog-time-end">→ ${p.endTime}</div>`:''}
+          ${dur?`<div class="prog-time-dur">${dur}</div>`:''}
+        </div>
+        <div class="prog-content">
+          <div class="prog-num">Program ${p.num}</div>
+          <div class="prog-name">${esc(p.name)}</div>
+          ${p.type||p.lead?`<div class="prog-type-lead">
+            ${p.type?`<span class="prog-type-tag ${tagCls}">${tagLabel}</span>`:''}
+            ${p.lead?`<span class="prog-lead">${esc(p.lead)}</span>`:''}
+          </div>`:''}
+          ${p.participants.length?`<div class="prog-participants">${p.participants.map(pp=>`<span class="participant-chip">${esc(pp)}</span>`).join('')}</div>`:''}
+        </div>`;
+      timeline.appendChild(row);
+    } else {
+      // Slot
+      const s=item.data;
+      const info=slotTypeInfo(s.slotType);
+      const row=document.createElement('div');
+      row.className='slot-row';
+      row.innerHTML=`
+        <div class="prog-time"></div>
+        <div class="slot-content">
+          <span class="slot-icon">${info.icon}</span>
+          <span class="slot-name">${esc(s.name)}</span>
+          <span class="slot-type-tag ${info.cls}">${info.label}</span>
+          <button class="slot-remove-btn" title="Remove slot">✕</button>
+        </div>`;
+      row.querySelector('.slot-remove-btn').addEventListener('click',()=>{
+        runSheetItems.splice(index,1);
+        renderRunSheet(filename);
       });
-      activeFilter = btn.dataset.filter;
-      btn.classList.add(activeFilter === 'duplicates' ? 'active-warn' : 'active');
-      applyFilters();
-    });
+      timeline.appendChild(row);
+    }
   });
 
-  async function loadSubmissions() {
-    showState('loading');
-    $('statsStrip').classList.remove('show');
-    $('toolbar').style.display = 'none';
-    searchQuery = '';
-    activeFilter = 'all';
-    document.querySelectorAll('.filter-btn').forEach(b => {
-      b.classList.remove('active', 'active-warn');
-    });
-    document.querySelector('[data-filter="all"]').classList.add('active');
-    $('searchInput').value = '';
+  // Add slot button at the very end
+  const addRowEnd=document.createElement('div');
+  addRowEnd.className='add-slot-row';
+  addRowEnd.innerHTML=`<button class="add-slot-btn">+ Add slot here</button>`;
+  addRowEnd.querySelector('.add-slot-btn').addEventListener('click',()=>openSlotModal(runSheetItems.length));
+  timeline.appendChild(addRowEnd);
+}
 
-    try {
-      const res = await fetch('/.netlify/functions/get-submissions');
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load submissions.');
-      renderCards(data.submissions || []);
-    } catch (err) {
-      showState('error');
-      $('errorMsg').textContent = err.message || 'Something went wrong. Please refresh and try again.';
-    }
-  }
+// Slot modal
+let _insertIndex=null;
+let _currentFilename='';
+function openSlotModal(index){
+  _insertIndex=index;
+  $('s-name').value='';$('s-type').value='break';
+  $('slotModalBackdrop').classList.add('show');
+  setTimeout(()=>$('s-name').focus(),50);
+}
+function closeSlotModal(){$('slotModalBackdrop').classList.remove('show');}
+$('slotModalClose').addEventListener('click',closeSlotModal);
+$('slotCancel').addEventListener('click',closeSlotModal);
+$('slotModalBackdrop').addEventListener('click',e=>{if(e.target===$('slotModalBackdrop'))closeSlotModal();});
+$('slotSave').addEventListener('click',()=>{
+  const name=$('s-name').value.trim();
+  if(!name){$('s-name').focus();return;}
+  const slotType=$('s-type').value;
+  runSheetItems.splice(_insertIndex,0,{type:'slot',data:{name,slotType}});
+  closeSlotModal();
+  // Re-render preserving filename from meta
+  const metaText=$('stageMeta').textContent;
+  const fn=metaText.split('·')[0].trim()||'program.pdf';
+  renderRunSheet(fn);
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('slotModalBackdrop').classList.contains('show'))closeSlotModal();});
 
-  $('refreshBtn').addEventListener('click', loadSubmissions);
-  loadSubmissions();
+loadSubmissions();
 })();
 </script>
 </body>
