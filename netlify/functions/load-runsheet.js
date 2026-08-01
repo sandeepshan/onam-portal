@@ -74,6 +74,7 @@ exports.handler = async function (event) {
         items: data.items || [],
         filename: data.filename || 'program.pdf',
         savedAt: data.savedAt || files[0].modifiedTime,
+        mcAssignments: data.mcAssignments || {},
       }),
     };
   } catch (err) {

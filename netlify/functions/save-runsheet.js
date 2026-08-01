@@ -39,7 +39,7 @@ exports.handler = async function (event) {
   try { body = JSON.parse(event.body); }
   catch { return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid request body.' }) }; }
 
-  const { items, filename } = body;
+  const { items, filename, mcAssignments } = body;
   if (!items || !Array.isArray(items)) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'items array is required.' }) };
   }
@@ -55,7 +55,7 @@ exports.handler = async function (event) {
     const drive = google.drive({ version: 'v3', auth });
     const accessToken = (await auth.getAccessToken()).token;
 
-    const payload = JSON.stringify({ items, filename, savedAt: new Date().toISOString() });
+    const payload = JSON.stringify({ items, filename, mcAssignments: mcAssignments || {}, savedAt: new Date().toISOString() });
 
     // Check if a run sheet file already exists — if so, update it in place
     // so Drive doesn't accumulate multiple copies.
