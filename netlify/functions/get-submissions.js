@@ -3,11 +3,12 @@
 // Reads all .info.txt files from the configured Drive folder and returns
 // them as a parsed JSON array for the submissions dashboard.
 //
-// Required environment variables (same as get-upload-url):
+// Required environment variables:
 //   GOOGLE_OAUTH_CLIENT_ID
 //   GOOGLE_OAUTH_CLIENT_SECRET
 //   GOOGLE_OAUTH_REFRESH_TOKEN
-//   DRIVE_FOLDER_ID
+//   DRIVE_SUBMISSIONS_FOLDER_ID  — folder containing .info.txt files (preferred)
+//   DRIVE_FOLDER_ID              — fallback if above is not set
 
 const { google } = require('googleapis');
 
@@ -77,7 +78,7 @@ exports.handler = async function (event) {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed.' }) };
   }
 
-  const folderId = process.env.DRIVE_FOLDER_ID;
+  const folderId = process.env.DRIVE_SUBMISSIONS_FOLDER_ID || process.env.DRIVE_FOLDER_ID;
   if (!folderId) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Drive folder not configured.' }) };
   }

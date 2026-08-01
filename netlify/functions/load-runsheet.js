@@ -34,7 +34,7 @@ exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'GET') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed.' }) };
 
-  const folderId = process.env.DRIVE_FOLDER_ID;
+  const folderId = process.env.DRIVE_SUBMISSIONS_FOLDER_ID || process.env.DRIVE_FOLDER_ID;
   if (!folderId) return { statusCode: 500, headers, body: JSON.stringify({ error: 'Drive folder not configured.' }) };
 
   let auth;

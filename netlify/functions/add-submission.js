@@ -58,7 +58,7 @@ exports.handler = async function (event) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Please provide a valid email address.' }) };
   }
 
-  const folderId = process.env.DRIVE_FOLDER_ID;
+  const folderId = process.env.DRIVE_SUBMISSIONS_FOLDER_ID || process.env.DRIVE_FOLDER_ID;
   if (!folderId) return { statusCode: 500, headers, body: JSON.stringify({ error: 'Drive folder not configured.' }) };
 
   let auth;
