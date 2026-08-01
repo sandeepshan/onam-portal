@@ -340,8 +340,34 @@ h1 em{font-style:italic;color:var(--coral);font-weight:500;}
 .slot-cancel-btn{background:none;border:1.5px solid rgba(224,162,59,0.2);color:var(--stage-soft);font-family:'Work Sans',sans-serif;font-size:13px;font-weight:500;padding:9px 16px;border-radius:2px;cursor:pointer;}
 .slot-cancel-btn:hover{border-color:var(--stage-gold);color:var(--stage-text);}
 
-/* Parsing state */
-.stage-parsing{padding:64px 48px;text-align:center;}
+/* ── MC Assignment ── */
+.mc-assign-row{
+  display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;
+}
+.mc-assign-label{
+  font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--stage-soft);opacity:0.6;white-space:nowrap;
+}
+.mc-combo-btn{
+  font-family:'Work Sans',sans-serif;font-size:11.5px;font-weight:600;
+  padding:4px 10px;border-radius:20px;cursor:pointer;
+  border:1.5px solid rgba(224,162,59,0.25);
+  background:rgba(224,162,59,0.06);color:var(--stage-soft);
+  transition:all 0.12s;white-space:nowrap;
+}
+.mc-combo-btn:hover{border-color:var(--stage-gold);color:var(--stage-text);}
+.mc-combo-btn.selected{
+  background:var(--stage-gold);border-color:var(--stage-gold);
+  color:var(--stage-bg);
+}
+.mc-summary-strip{
+  display:flex;gap:6px;flex-wrap:wrap;padding:16px 48px 0;
+}
+.mc-summary-chip{
+  font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;
+  background:rgba(224,162,59,0.1);border:1px solid rgba(224,162,59,0.2);
+  color:var(--stage-gold);letter-spacing:0.04em;
+}
 .stage-parsing .spinner{border-color:rgba(224,162,59,0.2);border-top-color:var(--stage-gold);}
 .stage-parsing p{font-size:14px;color:var(--stage-soft);margin-top:12px;}
 
@@ -525,7 +551,7 @@ function detectDups(subs){const pc={};subs.forEach(s=>{const pk=(s.program||'').
 
 let allCards=[],activeFilter='all',searchQuery='';
 function applyFilters(){const q=searchQuery.toLowerCase();let shown=0;allCards.forEach(({el,submission})=>{const type=fileType(submission.mediaFile);const ms=!q||(submission.program||'').toLowerCase().includes(q)||(submission.name||'').toLowerCase().includes(q)||(submission.description||'').toLowerCase().includes(q);const mf=activeFilter==='all'||(activeFilter==='audio'&&type==='audio')||(activeFilter==='video'&&type==='video')||(activeFilter==='manual'&&type==='manual')||(activeFilter==='duplicates'&&submission.isDuplicate);const v=ms&&mf;el.style.display=v?'':'none';if(v)shown++;});$('emptyCards').style.display=shown===0&&allCards.length>0?'':'none';$('resultLabel').textContent=shown===allCards.length?`${allCards.length} submission${allCards.length!==1?'s':''}`:`${shown} of ${allCards.length} shown`;}
-function updateStats(){const live=allCards.filter(c=>!c.removed);const total=live.length;const dups=live.filter(c=>c.submission.isDuplicate).length;const normalize=str=>(str||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();const matched=live.filter(c=>{if(!runSheetItems.length)return false;const pn=normalize(c.submission.program);return runSheetItems.some(i=>i.type==='program'&&(()=>{const rn=normalize(i.data.name);return rn===pn||rn.includes(pn)||pn.includes(rn);})());}).length;const rsTotal=runSheetItems.filter(i=>i.type==='program').length;const unmatched=rsTotal>0?Math.max(0,rsTotal-matched):0;$('statTotal').textContent=total;$('statMatched').textContent=matched;$('statUnmatched').textContent=unmatched;$('statDups').textContent=dups;$('statPrograms').textContent=rsTotal||'—';$('dupFilterBtn').textContent=dups>0?`⚠️ Duplicates (${dups})`:'Duplicates';}
+function updateStats(){const live=allCards.filter(c=>!c.removed);const total=live.length;const dups=live.filter(c=>c.submission.isDuplicate).length;const normalize=str=>(str||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();const matched=live.filter(c=>{if(!runSheetItems.length)return false;const pn=normalize(c.submission.program);return runSheetItems.some(i=>{if(i.type!=='program')return false;const rn=normalize(i.data.name);if(rn===pn)return true;const shorter=rn.length<pn.length?rn:pn;const longer=rn.length<pn.length?pn:rn;return longer.includes(shorter)&&(longer.split(' ').length-shorter.split(' ').length)<=1;});}).length;const rsTotal=runSheetItems.filter(i=>i.type==='program').length;const unmatched=rsTotal>0?Math.max(0,rsTotal-matched):0;$('statTotal').textContent=total;$('statMatched').textContent=matched;$('statUnmatched').textContent=unmatched;$('statDups').textContent=dups;$('statPrograms').textContent=rsTotal||'—';$('dupFilterBtn').textContent=dups>0?`⚠️ Duplicates (${dups})`:'Duplicates';}
 async function deleteSubmission(fileId,cardEntry){try{const res=await fetch('/.netlify/functions/delete-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fileId})});const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.error||'Could not delete.');cardEntry.el.classList.add('removing');cardEntry.removed=true;setTimeout(()=>{cardEntry.el.style.display='none';allCards=allCards.filter(c=>c!==cardEntry);// Re-evaluate duplicates on remaining cards
 const remaining=allCards.map(c=>c.submission);const reEvaled=detectDups(remaining);allCards.forEach((c,i)=>{c.submission.isDuplicate=reEvaled[i].isDuplicate;c.el.classList.toggle('is-duplicate',c.submission.isDuplicate);const dupBanner=c.el.querySelector('.card-banner.dup');if(dupBanner)dupBanner.style.display=c.submission.isDuplicate?'flex':'none';});updateStats();applyFilters();},260);}catch(err){return err.message||'Could not delete.';}}
 function buildCard(s,index){
@@ -545,8 +571,14 @@ function buildCard(s,index){
     const match=runSheetItems.find(i=>{
       if(i.type!=='program')return false;
       const rsNorm=normalize(i.data.name);
-      // Full match or one contains the other (handles minor truncation differences)
-      return rsNorm===progNorm||rsNorm.includes(progNorm)||progNorm.includes(rsNorm);
+      // Exact match or very close (one is a subset of the other only if short difference)
+      if(rsNorm===progNorm)return true;
+      // Allow containment only if the longer string is within 3 words of the shorter
+      const shorter=rsNorm.length<progNorm.length?rsNorm:progNorm;
+      const longer=rsNorm.length<progNorm.length?progNorm:rsNorm;
+      const shorterWords=shorter.split(' ').length;
+      const longerWords=longer.split(' ').length;
+      return longer.includes(shorter)&&(longerWords-shorterWords)<=1;
     });
     if(match){
       const d=match.data;
@@ -697,6 +729,7 @@ async function loadSavedRunSheet(showSpinner=false){
       return false;
     }
     runSheetItems=data.items;
+    mcAssignments=data.mcAssignments||{};
     renderRunSheet(data.filename||'program.pdf');
     dz.style.display='none';
     $('runSheet').style.display='block';
@@ -991,6 +1024,40 @@ function slotTypeInfo(t){
   return{icon:'✨',label:'Special',cls:'other'};
 }
 
+// ── MC Assignments ──
+const MCS=['Bismi','Arya','Athira','Parvathy'];
+// Generate all single and pair combinations
+const MC_COMBOS=[
+  ...MCS.map(m=>[m]),
+  ...MCS.flatMap((a,i)=>MCS.slice(i+1).map(b=>[a,b]))
+];
+// Map: programNum → combo label e.g. "Bismi & Arya"
+let mcAssignments={};
+
+function comboLabel(combo){return combo.join(' & ');}
+function comboKey(combo){return combo.join('&');}
+
+async function saveMCAssignments(){
+  try{
+    await fetch('/.netlify/functions/save-runsheet',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({items:runSheetItems,filename:currentFilename(),mcAssignments}),
+    });
+  }catch(e){console.warn('MC save failed:',e);}
+}
+
+function assignMC(progNum, combo){
+  const label=comboLabel(combo);
+  if(mcAssignments[progNum]===label){
+    delete mcAssignments[progNum]; // toggle off
+  } else {
+    mcAssignments[progNum]=label;
+  }
+  saveMCAssignments();
+  renderRunSheet(currentFilename());
+}
+
 function renderRunSheet(filename){
   const programs=runSheetItems.filter(i=>i.type==='program').map(i=>i.data);
   const total=programs.length;
@@ -1001,18 +1068,33 @@ function renderRunSheet(filename){
   $('stageMeta').textContent=`${filename} · ${total} programs · ${firstTime}${lastTime?' – '+lastTime:''}`;
   if(filename)$('stageSavedBadge').style.display='block';
 
+  // MC summary strip
+  const assigned=Object.entries(mcAssignments);
+  let mcSummaryHTML='';
+  if(assigned.length){
+    // Group by MC combo
+    const byCombo={};
+    assigned.forEach(([num,label])=>{
+      if(!byCombo[label])byCombo[label]=[];
+      byCombo[label].push(Number(num));
+    });
+    mcSummaryHTML=Object.entries(byCombo).map(([label,nums])=>
+      `<span class="mc-summary-chip">🎤 ${label}: Programs ${nums.sort((a,b)=>a-b).join(', ')}</span>`
+    ).join('');
+  }
+
   $('runSheetMeta').innerHTML=`
     <div class="rs-stat"><div class="rs-stat-val">${total}</div><div class="rs-stat-label">Programs</div></div>
     <div class="rs-stat"><div class="rs-stat-val">${totalParticipants}</div><div class="rs-stat-label">Participants</div></div>
     <div class="rs-stat"><div class="rs-stat-val">${firstTime}</div><div class="rs-stat-label">Start time</div></div>
     <div class="rs-stat"><div class="rs-stat-val">${lastTime||'—'}</div><div class="rs-stat-label">Est. finish</div></div>
+    ${mcSummaryHTML?`</div><div class="mc-summary-strip">${mcSummaryHTML}`:''}
   `;
 
   const timeline=$('timeline');
   timeline.innerHTML='';
 
   runSheetItems.forEach((item,index)=>{
-    // Add slot button before each item
     const addRow=document.createElement('div');
     addRow.className='add-slot-row';
     addRow.innerHTML=`<button class="add-slot-btn">+ Add slot here</button>`;
@@ -1023,6 +1105,8 @@ function renderRunSheet(filename){
       const p=item.data;
       const dur=calcDuration(p.startTime,p.endTime);
       const [tagCls,tagLabel]=typeTag(p.type);
+      const assignedMC=mcAssignments[p.num]||'';
+
       const row=document.createElement('div');
       row.className='prog-row';
       row.innerHTML=`
@@ -1039,10 +1123,24 @@ function renderRunSheet(filename){
             ${p.lead?`<span class="prog-lead">🎬 ${esc(p.lead)}</span><span style="font-size:10px;color:var(--stage-soft);margin-left:2px;opacity:0.7;">${/dance|thiruvathir/i.test(p.type)?'Choreographer':'Lead'}</span>`:''}
           </div>`:''}
           ${p.participants.length?`<div style="margin-top:2px;margin-bottom:2px;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--stage-soft);opacity:0.6;">Participants</div><div class="prog-participants">${p.participants.map(pp=>`<span class="participant-chip">${esc(pp)}</span>`).join('')}</div>`:''}
+          <div class="mc-assign-row">
+            <span class="mc-assign-label">🎤 MC</span>
+            ${MC_COMBOS.map(combo=>`<button class="mc-combo-btn${assignedMC===comboLabel(combo)?' selected':''}" data-num="${p.num}" data-combo="${comboKey(combo)}">${comboLabel(combo)}</button>`).join('')}
+          </div>
         </div>`;
+
+      // Wire MC buttons
+      row.querySelectorAll('.mc-combo-btn').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const num=Number(btn.dataset.num);
+          const key=btn.dataset.combo;
+          const combo=key.split('&');
+          assignMC(num,combo);
+        });
+      });
+
       timeline.appendChild(row);
     } else {
-      // Slot
       const s=item.data;
       const info=slotTypeInfo(s.slotType);
       const row=document.createElement('div');
